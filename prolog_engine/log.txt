@@ -1,0 +1,6 @@
+2020-02-14 23:58:20	finish
+2020-02-14 23:58:20	linux-sample-1.bin
+2020-02-14 23:58:20	get available_pages
+2020-02-14 23:58:20	construct knowledge base
+2020-02-14 23:58:20	start prolog reasoning
+count result: 0
