@@ -26,19 +26,20 @@ def main():
     '''
     
     paddr = vaddr_to_paddr(0xffff88001c278080) # apache task struct address
+    #paddr = 0x1477660
     
     construct_kb(image_path, paddr, 1024, set_vaddr_page)
     
     log('start prolog reasoning')
 
     p = Prolog()
-    p.consult("./knowledge/start_query.pl")
+    #p.consult("./knowledge/start_query.pl")
     count = 0
-    #query_cmd = "possible_task_struct(Base_addr)"
-    query_cmd = "task_struct_r(472350848)."
-    for s in p.query(query_cmd, catcherrors=False):
-        count += 1
-        #print(s["Base_addr"], s["Pid_offset"], s["MM_offset"], s["MM_offset2"], s["MM_pointer"])
+    query_cmd = "possible_task_struct(Base_addr)"
+    #query_cmd = "task_struct_r(472350848)."
+    #for s in p.query(query_cmd, catcherrors=False):
+    #    count += 1
+    #    print(s["Base_addr"], s["Pid_offset"], s["MM_offset"], s["MM_offset2"], s["MM_pointer"])
     print "count result:", count
     
 log('finish')

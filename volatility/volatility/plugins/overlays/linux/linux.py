@@ -2311,6 +2311,7 @@ class VolatilityDTB(obj.VolatilityMagic):
         profile = self.obj_vm.profile
         config = self.obj_vm.get_config()
         tbl    = self.obj_vm.profile.sys_map["kernel"]
+        print tbl["init_level4_pgt"]
         
         if profile.metadata.get('memory_model', '32bit') == "32bit":
             sym     = "swapper_pg_dir"
@@ -2342,7 +2343,7 @@ class VolatilityDTB(obj.VolatilityMagic):
             
         init_task_addr = tbl["init_task"][0][0] + virtual_shift_address
         dtb_sym_addr   = tbl[sym][0][0] + virtual_shift_address
-        #print hex(dtb_sym_addr)
+        print "original dtb_sym_addr", hex(tbl[sym][0][0]), "dtb_sym_addr", hex(dtb_sym_addr)
         files_sym_addr = tbl["init_files"][0][0] + virtual_shift_address
        
         comm_offset   = profile.get_obj_offset("task_struct", "comm")
@@ -2350,7 +2351,7 @@ class VolatilityDTB(obj.VolatilityMagic):
         files_offset  = profile.get_obj_offset("task_struct", "files") 
         mm_offset     = profile.get_obj_offset("task_struct", "active_mm")
         pas           = self.obj_vm
-        
+        print "comm offset", comm_offset, "pid", pid_offset, "mm offset", mm_offset
         if physical_shift_address != 0 and virtual_shift_address != 0:
             good_dtb = (dtb_sym_addr - shifts[0] - virtual_shift_address) + physical_shift_address
             self.obj_vm.profile.physical_shift = physical_shift_address 
@@ -2363,11 +2364,12 @@ class VolatilityDTB(obj.VolatilityMagic):
                 read_addr = init_task_addr - shift + comm_offset
 
                 buf = pas.read(read_addr, 12)        
+                #print "read swapper comm", hex(read_addr), buf, pas.read
                 if buf:
                     idx = buf.find("swapper")
                     if idx == 0:
                         good_dtb = sym_addr
-                        good_dtb = -1
+                        #good_dtb = -1
                         break
         #for shift in shifts:
         #    print "sym_addr", hex(dtb_sym_addr - shift), hex(dtb_sym_addr)
@@ -2376,6 +2378,7 @@ class VolatilityDTB(obj.VolatilityMagic):
             scanner = swapperScan(needles = ["swapper/0\x00\x00\x00\x00\x00\x00"])
             ctr = 0
             for swapper_offset in scanner.scan(self.obj_vm):
+                print "swapper offset", hex(swapper_offset)
                 swapper_address = swapper_offset - comm_offset
 
                 if pas.read(swapper_address, 4) != "\x00\x00\x00\x00":
@@ -2397,12 +2400,13 @@ class VolatilityDTB(obj.VolatilityMagic):
                 files_addr = struct.unpack(fmt, files_buf)[0]
 
                 tmp_virtual_shift = files_addr - files_sym_addr
-
+                print "tmp_virtual_shift", tmp_virtual_shift, "tmp_physical_shift", tmp_physical_shift, "init task found at", hex(swapper_address)
                 self.obj_vm.profile.physical_shift = tmp_physical_shift
                 self.obj_vm.profile.virtual_shift  = tmp_virtual_shift
  
                 break
-        #print "find good dtb ", hex(good_dtb)
+        #good_dtb = 0x1010b70
+        print "find good dtb ", hex(good_dtb)
         yield good_dtb
 
 # the intel check, simply checks for the static paging of init_task

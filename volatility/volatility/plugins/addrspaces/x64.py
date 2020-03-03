@@ -32,14 +32,8 @@ ptrs_per_pde = 512
 page_shift = 12
 ptrs_per_pae_pgd = 512
 ptrs_per_pae_pte = 512
-def fake_read(addr):
-    with open("home/zhenxiao/images/linux-sample-1.bin", 'r') as image:
-        content = 0
-        image.seek(addr)
-        content = image.read(8)
-        print "read content"
-    return content
-class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
+
+class X64PagedMemory(paged.AbstractWritablePagedMemory):
     """ Standard AMD 64-bit address space.
 
     This class implements the AMD64/IA-32E paging address space. It is responsible
@@ -72,6 +66,10 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
     alignment_gcd = 0x1000
     _longlong_struct = struct.Struct("<Q")
     skip_duplicate_entries = False
+
+    def __init__(self, image_path, dtb = 0):
+        self.image_path = image_path
+        self.dtb = dtb
 
     def entry_present(self, entry):
         return entry and (entry & 1)
@@ -135,7 +133,6 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         "Bits 2:0 are 0" [Intel]
         '''
         pml4e_paddr = (self.dtb & 0xffffffffff000) | ((vaddr & 0xff8000000000) >> 36)
-        #print "get_pml4e", hex(pml4e_paddr)
         return self.read_long_long_phys(pml4e_paddr)
 
     def get_pdpi(self, vaddr, pml4e):
@@ -197,7 +194,6 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         vaddr = long(vaddr)
         retVal = None
         pml4e = self.get_pml4e(vaddr)
-        #print "vtop", hex(pml4e), hex(vaddr)
         if not self.entry_present(pml4e):
             return None
 
@@ -217,11 +213,21 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                 if self.entry_present(pte):
                     retVal = self.get_paddr(vaddr, pte)
         return retVal
+    def read(self, addr, length, pad = False):
+        try:
+            with open(self.image_path, 'r') as image:
+                image.seek(addr)
+                content = image.read(length)
+        except IOError:
+            content = None
+        if not content:
+            return obj.NoneObject("Unable to read_long_long_phys at " + hex(addr))
+        if len(content) < 4096 and pad:
+            m = 4096 - len(content)
+            content.append("\x00" * m)
+        #print type(content), content
+        return content
 
-    def is_user_pointer(self, buf, idx):
-        dest = (ord(buf[idx+7]) << 56) + (ord(buf[idx+6]) << 48) + (ord(buf[idx+5]) << 40) + (ord(buf[idx+4]) << 32) + (ord(buf[idx+3]) << 24) + (ord(buf[idx+2]) << 16) + (ord(buf[idx+1]) << 8) + ord(buf[idx])
-        return dest
-    
     def read_long_long_phys(self, addr):
         '''
         This method returns a 64-bit little endian
@@ -232,34 +238,13 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         This code was derived directly from legacyintel.py
         '''
         try:
-            #with open('home/zhenxiao/images/linux-sample-1.bin', 'r') as image:
-            #    image.seek(addr)
-            #    content = image.read(8)
-            #    string = self.is_user_pointer(string, 0)
-            string = self.base.read(addr, 8)
-            #content = fake_read(addr)
+            string = self.read(addr, 8)
         except IOError:
             string = None
         if not string:
             return obj.NoneObject("Unable to read_long_long_phys at " + hex(addr))
         longlongval, = self._longlong_struct.unpack(string)
         return longlongval
-    
-    def get_page_info(self, addr, length):
-        info = {}
-        idx = 0
-        while idx < length:
-            try:
-                string = self.base.read(addr, 8)
-            except IOError:
-                string = None
-            if not string:
-                return obj.NoneObject("Unable to read_long_long_phys at " + hex(addr))
-            longlongval, = self._longlong_struct.unpack(string)
-            info[addr] = string
-            addr += 8
-            idx += 8
-        return info
 
     def get_available_pages(self, with_pte = False):
         '''
@@ -271,10 +256,12 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         Page Directory, and Page Table to determine which pages
         are accessible.
         '''
-        print "amd64 get_physical_pages"
+        print "X64 get_physical_pages"
         # read the full pml4
-        pml4 = self.base.read(self.dtb & 0xffffffffff000, 0x200 * 8)
-        if pml4 is None:
+        #pml4 = self.base.read(self.dtb & 0xffffffffff000, 0x200 * 8)
+        pml4 = self.read(self.dtb & 0xffffffffff000, 0x200 * 8, True)
+        if pml4 is None or len(pml4)==0:
+            print "pml4 is none"
             return
 
         # unpack all entries
@@ -290,8 +277,9 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                 continue
             
             pdpt_base = (pml4e_value & 0xffffffffff000)
-            pdpt = self.base.read(pdpt_base, 0x200 * 8)
-            if pdpt is None:
+            #pdpt = self.base.read(pdpt_base, 0x200 * 8)
+            pdpt = self.read(pdpt_base, 0x200 * 8, True)
+            if pdpt is None or len(pdpt)==0:
                 continue
 
             pdpt_entries = struct.unpack('<512Q', pdpt)
@@ -299,9 +287,11 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                 vaddr = (pml4e << 39) | (pdpte << 30)
                 pdpte_value = pdpt_entries[pdpte]
                 if not self.entry_present(pdpte_value):
+                    #print "not present"
                     continue
 
                 if self.page_size_flag(pdpte_value):
+                    print "test1"
                     if with_pte: 
                         yield (pdpte_value, vaddr, 0x40000000)
                     else:
@@ -309,8 +299,9 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                     continue
 
                 pd_base = self.pdba_base(pdpte_value)
-                pd = self.base.read(pd_base, 0x200 * 8)
-                if pd is None:
+                #pd = self.base.read(pd_base, 0x200 * 8)
+                pd = self.read(pd_base, 0x200 * 8, True)
+                if pd is None or len(pd)==0:
                     continue
                 pd_entries = struct.unpack('<512Q', pd)
                 for key in pd_entries:
@@ -328,6 +319,7 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                     prev_pd_entry = entry
                     if self.entry_present(entry) and self.page_size_flag(entry):
                         #print hex(vaddr + soffset)
+                        print "test2"
                         if with_pte: 
                             yield (entry, vaddr + soffset, 0x200000)
                         else:
@@ -335,8 +327,9 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
 
                     elif self.entry_present(entry):
                         pt_base = entry & 0xFFFFFFFFFF000
-                        pt = self.base.read(pt_base, 0x200 * 8)
-                        if pt is None:
+                        #pt = self.base.read(pt_base, 0x200 * 8)
+                        pt = self.read(pt_base, 0x200 * 8, True)
+                        if pt is None or len(pt)==0:
                             continue
                         pt_entries = struct.unpack('<512Q', pt)
                         prev_pt_entry = None
@@ -347,6 +340,7 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                             prev_pt_entry = pt_entry
 
                             if self.entry_present(pt_entry):
+                                print "test3"
                                 if with_pte:
                                     yield (pt_entry, vaddr + soffset + k * 0x1000, 0x1000)
                                 else:
@@ -356,70 +350,9 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
     def address_mask(cls, addr):
         return addr & 0xffffffffffff
 
-class WindowsAMD64PagedMemory(AMD64PagedMemory):
-    """Windows-specific AMD 64-bit address space.
-
-    This class is a specialized version of AMD64PagedMemory that leverages
-    Windows-specific paging logic.
-    """
-    order = 55
-
-    def is_valid_profile(self, profile):
-        '''
-        This method checks to make sure the address space is being
-        used with a Windows profile.
-        '''
-
-        valid = AMD64PagedMemory.is_valid_profile(self, profile)
-        return valid and profile.metadata.get('os', 'Unknown').lower() == 'windows'
-
-    def entry_present(self, entry):
-        present = AMD64PagedMemory.entry_present(self, entry)
-
-        # The page is in transition and not a prototype.
-        # Thus, we will treat it as present.
-        return present or ((entry & (1 << 11)) and not (entry & (1 << 10)))
-
-class SkipDuplicatesAMD64PagedMemory(WindowsAMD64PagedMemory):
-    """Windows 8/10-specific AMD 64-bit address space.
-
-    This class is used to filter out large sections of kernel mappings that are
-    duplicates in recent versions of Windows 8/10.
-    """
-    order = 53
-    skip_duplicate_entries = True
-
-    def is_valid_profile(self, profile):
-        '''
-        This address space should only be used with recent Windows 8/10 profiles
-        '''
-
-        valid = WindowsAMD64PagedMemory.is_valid_profile(self, profile)
-        major = profile.metadata.get('major', 0)
-        minor = profile.metadata.get('minor', 0)
-        return valid and major >= 6 and minor >= 2
 
 
-class LinuxAMD64PagedMemory(AMD64PagedMemory):
-    """Linux-specific AMD 64-bit address space.
 
-    This class is a specialized version of AMD64PagedMemory that leverages
-    Linux-specific paging logic.
-    """
-    order = 55
 
-    def is_valid_profile(self, profile):
-        '''
-        This method checks to make sure the address space is being
-        used with a Linux profile.
-        '''
 
-        valid = AMD64PagedMemory.is_valid_profile(self, profile)
-        return valid and profile.metadata.get('os', 'Unknown').lower() == 'linux'
 
-    def entry_present(self, entry):
-        present = AMD64PagedMemory.entry_present(self, entry)
-
-        # Linux pages that have had mprotect(...PROT_NONE) called on them
-        # have the present bit cleared and global bit set
-        return present or (entry & (1 << 8))

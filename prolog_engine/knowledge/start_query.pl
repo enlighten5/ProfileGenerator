@@ -175,7 +175,54 @@ possible_task_struct(Base_addr) :-
     print_nl('pid', Pid_offset),
     print_nl('mm_struct', MM_offset2).
 
+possible_task_struct2(Base_addr) :- 
+    % void *stack 
+    ispointer(Base_addr, Stack_offset, Stack_value),
+    
+    % sched_info sched_info 
+    
+    ispointer(Base_addr, Sched_info_offset, Sched_info_value),
+    Sched_info_offset > Stack_offset,
+    
+    % list_head tasks 
 
+    
+    ispointer(Base_addr, Tasks_offset, Task_value),
+    Tasks_offset > Sched_info_offset, 
+
+    isint(Base_addr, Pid_offset, Value),
+    isint(Base_addr, Tgid_offset, Value2),
+    Tgid_offset is Pid_offset + 4,
+    Tgid_offset > Tasks_offset,
+    
+
+    ispointer(Base_addr, MM_offset, MM_pointer),
+    MM_offset < Tgid_offset,
+    MM_offset > 400,
+    
+    ispointer(Base_addr, MM_offset2, MM_pointer),
+    MM_offset2 is MM_offset + 8,
+
+
+    /* comm */
+
+    isstring(Base_addr, Comm_offset, Comm_value),
+    Comm_offset > MM_offset2,
+
+    /*list_head_next(Task_value, List_head_offset),*/
+
+
+    /* task_struct *parent */
+    
+    ispointer(Base_addr, Parent_offset, Parent_value),
+    Parent_offset > Tgid_offset,
+    Parent_offset < Tgid_offset + 20,
+
+    print_nl('parent', Parent_offset),
+    print_nl('stack', Stack_offset),
+    print_nl('task', Tasks_offset),
+    print_nl('pid', Pid_offset),
+    print_nl('mm_struct', MM_offset2).
     
 
 possible_mm_struct(Base_addr) :- 

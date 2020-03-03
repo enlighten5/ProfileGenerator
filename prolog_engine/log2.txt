@@ -1,0 +1,142 @@
+('raw bytes at ', '0x1477660', 0, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477668', 8, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477670', 16, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477678', 24, '=v=v\x00\x00\x00\x00', '0x763d763d')
+0x1477680 should be init_task phys addr
+('raw bytes at ', '0x1477680', 32, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477688', 40, '\x7f\x00\x00pP\x81\xff\xff', '0xffff81507000007fL') may be stack
+('raw bytes at ', '0x1477690', 48, '\xff\xff\x90\x90\x90\x90\x90\x90', '0x909090909090ffffL')
+('raw bytes at ', '0x1477698', 56, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14776a0', 64, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14776a8', 72, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14776b0', 80, '\x00\xc0B\x81\xff\xff\xff\xff', '0xffffffff8142c000L')
+('raw bytes at ', '0x14776b8', 88, '\x02\x00\x00\x00\x00\x01 \x00', '0x20010000000002')
+('raw bytes at ', '0x14776c0', 96, '\x00\x00\x00\x00\xff\xff\xff\xff', '0xffffffff00000000L')
+
+('raw bytes at ', '0x14776c8', 104, 'x\x00\x00\x00x\x00\x00\x00', '0x7800000078') same with apache
+('raw bytes at ', '0x14776d0', 112, 'x\x00\x00\x00\x00\x00\x00\x00', '0x78') same with apache
+('raw bytes at ', '0x14776d8', 120, '\x10.1\x81\xff\xff\xff\xff', '0xffffffff81312e10L')
+('raw bytes at ', '0x14776e0', 128, '\x00\x04\x00\x00\x00\x00\x00\x00', '0x400') same with apache
+('raw bytes at ', '0x14776e8', 136, '\x00\x00@\x00\x00\x00\x00\x00', '0x400000') same with apache
+('raw bytes at ', '0x14776f0', 144, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14776f8', 152, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477700', 160, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477708', 168, 'PrH\x81\xff\xff\xff\xff', '0xffffffff81487250L')
+('raw bytes at ', '0x1477710', 176, 'PrH\x81\xff\xff\xff\xff', '0xffffffff81487250L')
+
+('raw bytes at ', '0x1477718', 184, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477720', 192, '\x85\xe0\x14\xf4\x00\x00\x00\x00', '0xf414e085')
+('raw bytes at ', '0x1477728', 200, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477730', 208, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477738', 216, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477740', 224, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477748', 232, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477750', 240, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477758', 248, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477760', 256, '@B\x0f\x00\x00\x00\x00\x00', '0xf4240')
+
+('raw bytes at ', '0x1477768', 264, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477770', 272, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477778', 280, '(X\x81\x01\x00\x88\xff\xff', '0xffff880001815828L')
+('raw bytes at ', '0x1477780', 288, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477788', 296, '\xd0rH\x81\xff\xff\xff\xff', '0xffffffff814872d0L')
+('raw bytes at ', '0x1477790', 304, '\xd0rH\x81\xff\xff\xff\xff', '0xffffffff814872d0L')
+
+('raw bytes at ', '0x1477798', 312, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14777a0', 320, '\xfa\x00\x00\x00\x00\x02\x00\x00', '0x200000000fa')
+('raw bytes at ', '0x14777a8', 328, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14777b0', 336, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14777b8', 344, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14777c0', 352, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14777c8', 360, '\x01\x00\x00\x00\x00\x00\x00\x00', '0x1')
+('raw bytes at ', '0x14777d0', 368, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14777d8', 376, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14777e0', 384, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14777e8', 392, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14777f0', 400, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14777f8', 408, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477800', 416, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477808', 424, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477810', 432, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477818', 440, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477820', 448, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+
+('raw bytes at ', '0x1477828', 456, '\x80\xc1\x8f\x1f\x00\x88\xff\xff', '0xffff88001f8fc180L') task phys 0x1f8ecd48
+('raw bytes at ', '0x1477830', 464, '\xf0r\xcc\x17\x00\x88\xff\xff', '0xffff880017cc72f0L')
+('raw bytes at ', '0x1477838', 472, '\x8c\x00\x00\x00\x00\x00\x00\x00', '0x8c')
+('raw bytes at ', '0x1477840', 480, '\x88sH\x81\xff\xff\xff\xff', '0xffffffff81487388L') pointers
+('raw bytes at ', '0x1477848', 488, '\x88sH\x81\xff\xff\xff\xff', '0xffffffff81487388L')
+('raw bytes at ', '0x1477850', 496, '\x98sH\x81\xff\xff\xff\xff', '0xffffffff81487398L') mm 
+('raw bytes at ', '0x1477858', 504, '\x98sH\x81\xff\xff\xff\xff', '0xffffffff81487398L') pointers mm phys 0x1477828
+('raw bytes at ', '0x1477860', 512, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477868', 520, '\x80X\x98\x1d\x00\x88\xff\xff', '0xffff88001d985880L') this should be mm
+('raw bytes at ', '0x1477870', 528, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477878', 536, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+
+('raw bytes at ', '0x1477880', 544, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0') pid
+('raw bytes at ', '0x1477888', 552, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0') tgid
+('raw bytes at ', '0x1477890', 560, 'I"j\\Y$\x8d\x17', '0x178d24595c6a2249')
+
+('raw bytes at ', '0x1477898', 568, '\xf0qH\x81\xff\xff\xff\xff', '0xffffffff814871f0L') parent
+('raw bytes at ', '0x14778a0', 576, '\xf0qH\x81\xff\xff\xff\xff', '0xffffffff814871f0L') parent
+('raw bytes at ', '0x14778a8', 584, '\x10\xc2\x8f\x1f\x00\x88\xff\xff', '0xffff88001f8fc210L')
+('raw bytes at ', '0x14778b0', 592, ' \xc9\x8f\x1f\x00\x88\xff\xff', '0xffff88001f8fc920L')
+('raw bytes at ', '0x14778b8', 600, '\x00tH\x81\xff\xff\xff\xff', '0xffffffff81487400L')
+('raw bytes at ', '0x14778c0', 608, '\x00tH\x81\xff\xff\xff\xff', '0xffffffff81487400L')
+
+('raw bytes at ', '0x14778c8', 616, '\xf0qH\x81\xff\xff\xff\xff', '0xffffffff814871f0L')  it self should be group leader
+
+('raw bytes at ', '0x14778d0', 624, '\x18tH\x81\xff\xff\xff\xff', '0xffffffff81487418L')
+('raw bytes at ', '0x14778d8', 632, '\x18tH\x81\xff\xff\xff\xff', '0xffffffff81487418L')
+('raw bytes at ', '0x14778e0', 640, '(tH\x81\xff\xff\xff\xff', '0xffffffff81487428L')
+('raw bytes at ', '0x14778e8', 648, '(tH\x81\xff\xff\xff\xff', '0xffffffff81487428L')
+('raw bytes at ', '0x14778f0', 656, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+
+('raw bytes at ', '0x14778f8', 664, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477900', 672, '\xa8$I\x81\xff\xff\xff\xff', '0xffffffff814924a8L')
+('raw bytes at ', '0x1477908', 680, '\xa0$I\x81\xff\xff\xff\xff', '0xffffffff814924a0L')
+('raw bytes at ', '0x1477910', 688, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477918', 696, 'x\xc9\x8f\x1f\x00\x88\xff\xff', '0xffff88001f8fc978L')
+('raw bytes at ', '0x1477920', 704, '\xa0$I\x81\xff\xff\xff\xff', '0xffffffff814924a0L')
+('raw bytes at ', '0x1477928', 712, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477930', 720, '\x90\xc9\x8f\x1f\x00\x88\xff\xff', '0xffff88001f8fc990L')
+('raw bytes at ', '0x1477938', 728, '\xa0$I\x81\xff\xff\xff\xff', '0xffffffff814924a0L')
+('raw bytes at ', '0x1477940', 736, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0') should be pointer 
+('raw bytes at ', '0x1477948', 744, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0') should be pointer
+
+('raw bytes at ', '0x1477950', 752, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477958', 760, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0') large number
+('raw bytes at ', '0x1477960', 768, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0') large number 
+('raw bytes at ', '0x1477968', 776, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477970', 784, 'L\x00\x00\x00\x00\x00\x00\x00', '0x4c')
+('raw bytes at ', '0x1477978', 792, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477980', 800, 'L\x00\x00\x00\x00\x00\x00\x00', '0x4c')
+('raw bytes at ', '0x1477988', 808, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477990', 816, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x1477998', 824, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14779a0', 832, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14779a8', 840, 'u\x10\x00\x00\x00\x00\x00\x00', '0x1075')
+('raw bytes at ', '0x14779b0', 848, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14779b8', 856, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14779c0', 864, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14779c8', 872, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14779d0', 880, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14779d8', 888, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14779e0', 896, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14779e8', 904, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')
+('raw bytes at ', '0x14779f0', 912, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0') above the same
+('raw bytes at ', '0x14779f8', 920, '@uH\x81\xff\xff\xff\xff', '0xffffffff81487540L')
+('raw bytes at ', '0x1477a00', 928, '@uH\x81\xff\xff\xff\xff', '0xffffffff81487540L')
+('raw bytes at ', '0x1477a08', 936, 'PuH\x81\xff\xff\xff\xff', '0xffffffff81487550L')
+('raw bytes at ', '0x1477a10', 944, 'PuH\x81\xff\xff\xff\xff', '0xffffffff81487550L')
+('raw bytes at ', '0x1477a18', 952, '`uH\x81\xff\xff\xff\xff', '0xffffffff81487560L')
+('raw bytes at ', '0x1477a20', 960, '`uH\x81\xff\xff\xff\xff', '0xffffffff81487560L')
+('raw bytes at ', '0x1477a28', 968, '@2I\x81\xff\xff\xff\xff', '0xffffffff81493240L')
+('raw bytes at ', '0x1477a30', 976, '@2I\x81\xff\xff\xff\xff', '0xffffffff81493240L')
+('raw bytes at ', '0x1477a38', 984, '\x01\x00\x00\x00\x00\x00\x00\x00', '0x1')            |
+('raw bytes at ', '0x1477a40', 992, '\x88uH\x81\xff\xff\xff\xff', '0xffffffff81487588L')  |
+('raw bytes at ', '0x1477a48', 1000, '\x88uH\x81\xff\xff\xff\xff', '0xffffffff81487588L') | 4 of these is more
+('raw bytes at ', '0x1477a50', 1008, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')           |
+('raw bytes at ', '0x1477a58', 1016, '\x00\x00\x00\x00\x00\x00\x00\x00', '0x0')           |
+('raw bytes at ', '0x1477a60', 1024, 'swapper\x00', '0x72657070617773')
+found swapper at 0x1477a60 1024 swapper

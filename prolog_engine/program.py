@@ -294,9 +294,9 @@ def read_available_pages(image_name):
     with open(PAGE_PATH + 'pages.' + image_name, 'r') as page:
         for line in page:
             s = line.strip().split('\t')
-            vaddr = int(s[0])
-            paddr = int(s[1])
-            size = int(s[2])
+            vaddr = int(s[0], 16)
+            paddr = int(s[1], 16)
+            size = int(s[2], 16)
             dict_paddr_to_size[paddr] = size
             for i in range(0, size, 4096):
                 g_dict_paddr_to_vaddr[paddr + i] = vaddr + i

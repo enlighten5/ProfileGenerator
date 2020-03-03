@@ -229,7 +229,7 @@ class AbstractDiscreteAllocMemory(BaseAddressSpace):
 
         if not self.alignment_gcd or not self.minimum_size:
             self.calculate_alloc_stats()
-
+            
         position = addr
         remaining = length
         buff = []

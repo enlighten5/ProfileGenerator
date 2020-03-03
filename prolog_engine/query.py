@@ -30,7 +30,7 @@ def main():
 def construct_kb(paddr):
     size = 1024
     # change to the path of the memory image. 
-    image_path = "/home/zhenxiao/DeepMem/memory_dumps/linux-sample-1.bin"
+    image_path = "/home/zhenxiao/images/linux-sample-1.bin"
     dict_paddr_to_size, set_vaddr_page = read_available_pages("linux-sample-1.bin")
     with open(PWD + "/knowledge/temp_kb.pl", 'w') as kb:
             kb.write("use_module(library(clpfd))." + "\n")
