@@ -70,6 +70,17 @@ class get_physical_pages(taskmods.DllList):
         
         #    print hex(key), key-0x3810500, hex(self.is_user_pointer(page_info[key], 0)), page_info[key] 
             idx += 1
+
+        p = self.kernel_address_space.vtop(0xffffffff81e10500)
+        print "paddr: ", p
+        tmp_i = 0
+        while tmp_i < 0x5000000:
+            s1 = self.kernel_address_space.base.read(0x1000000 + tmp_i, 8)
+            s2 = self.kernel_address_space.read_long_long_phys(0x3809000 + tmp_i)
+            if s2 and bin(s2 & 0b111111111111) == '0b1100111' and len(bin(s2)) <= 32 and len(bin(s2)) >= 25:
+                print "addr", hex(0x3809000 + tmp_i), "content", bin(s2), s1, bin(s2 & 0b1111111), len(bin(s2))
+            #print "addr", hex(0x3809000 + tmp_i), "content", bin(s2), s1, bin(s2 & 0b1111111)
+            tmp_i += 8
         self.log('Get continuous pages')
         dict_page_addr_to_size = {}
         if WIN32_OR_64 == 64:

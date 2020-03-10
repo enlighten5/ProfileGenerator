@@ -197,7 +197,8 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         vaddr = long(vaddr)
         retVal = None
         pml4e = self.get_pml4e(vaddr)
-        #print "vtop", hex(pml4e), hex(vaddr)
+        if vaddr == 0xffffffffacc09000:
+            print "vtop", hex(pml4e), hex(vaddr)
         if not self.entry_present(pml4e):
             return None
 
@@ -232,12 +233,7 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         This code was derived directly from legacyintel.py
         '''
         try:
-            #with open('home/zhenxiao/images/linux-sample-1.bin', 'r') as image:
-            #    image.seek(addr)
-            #    content = image.read(8)
-            #    string = self.is_user_pointer(string, 0)
             string = self.base.read(addr, 8)
-            #content = fake_read(addr)
         except IOError:
             string = None
         if not string:
@@ -282,13 +278,13 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         for key in pml4_entries:
             if key == 0:
                 continue
-            #print bin(key), hex(key)
+            print bin(key), hex(key)
         for pml4e in range(0, 0x200):
             vaddr = pml4e << 39
             pml4e_value = pml4_entries[pml4e]
             if not self.entry_present(pml4e_value):
                 continue
-            
+            #print "pml4e", pml4e, "pml4e_value", hex(pml4e_value)
             pdpt_base = (pml4e_value & 0xffffffffff000)
             pdpt = self.base.read(pdpt_base, 0x200 * 8)
             if pdpt is None:
@@ -307,7 +303,7 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                     else:
                         yield (vaddr, 0x40000000)
                     continue
-
+                #print "pdpte_value", hex(pdpte_value)
                 pd_base = self.pdba_base(pdpte_value)
                 pd = self.base.read(pd_base, 0x200 * 8)
                 if pd is None:
@@ -327,7 +323,7 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                         continue
                     prev_pd_entry = entry
                     if self.entry_present(entry) and self.page_size_flag(entry):
-                        #print hex(vaddr + soffset)
+                        #print "entry1", hex(entry)
                         if with_pte: 
                             yield (entry, vaddr + soffset, 0x200000)
                         else:
@@ -347,6 +343,7 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                             prev_pt_entry = pt_entry
 
                             if self.entry_present(pt_entry):
+                                #print "entry2", hex(entry)
                                 if with_pte:
                                     yield (pt_entry, vaddr + soffset + k * 0x1000, 0x1000)
                                 else:
