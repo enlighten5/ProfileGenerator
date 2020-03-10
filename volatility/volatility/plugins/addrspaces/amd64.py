@@ -278,13 +278,13 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         for key in pml4_entries:
             if key == 0:
                 continue
-            print bin(key), hex(key)
+            #print bin(key), hex(key)
         for pml4e in range(0, 0x200):
             vaddr = pml4e << 39
             pml4e_value = pml4_entries[pml4e]
             if not self.entry_present(pml4e_value):
                 continue
-            #print "pml4e", pml4e, "pml4e_value", hex(pml4e_value)
+            #print bin(pml4e_value), "pml4e_value", hex(pml4e_value)
             pdpt_base = (pml4e_value & 0xffffffffff000)
             pdpt = self.base.read(pdpt_base, 0x200 * 8)
             if pdpt is None:
@@ -349,6 +349,122 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                                 else:
                                     yield (vaddr + soffset + k * 0x1000, 0x1000)
 
+    def get_possible_pages(self, start_addr = 0x3809000, with_pte = False):
+        '''
+        This method generates a list of pages that are
+        available within the address space. The entries in
+        are composed of the virtual address of the page
+        and the size of the particular page (address, size).
+        It walks the 0x1000/0x8 (0x200) entries in each Page Map,
+        Page Directory, and Page Table to determine which pages
+        are accessible.
+        '''
+        print "amd64 get_possible_pages"
+        pml_enrty = []
+        pml_enrty2 = []
+        step = 0
+        while step < 0x5000000:
+            # read the full pml4
+            pml4 = self.base.read(start_addr+step & 0xffffffffff000, 0x200 * 8)
+            if pml4 is None:
+                continue
+
+            # unpack all entries
+            pml4_entries = struct.unpack('<512Q', pml4)
+            for key in pml4_entries:
+                if key == 0:
+                    continue
+                if not bin(key & 0b111111111111) == '0b1100111':
+                    continue
+                if len(bin(key)) > 32 or len(bin(key)) < 25:
+                    continue
+                #print bin(key), hex(key), hex(start_addr+step)
+            
+            for pml4e in range(0, 0x200):
+                pml4e_value = pml4_entries[pml4e]
+                if not self.entry_present(pml4e_value):
+                    continue
+                if not bin(pml4e_value & 0b111111111111) == '0b1100111':
+                    continue
+                if len(bin(pml4e_value)) > 32 or len(bin(pml4e_value)) < 25:
+                    continue
+
+                pdpt_base = (pml4e_value & 0xffffffffff000)
+                pdpt = self.base.read(pdpt_base, 0x200 * 8)
+                if pdpt is None:
+                    continue
+                pdpt_entries = struct.unpack('<512Q', pdpt)
+                for pdpte in range(0, 0x200):
+                    vaddr = (pml4e << 39) | (pdpte << 30)
+                    pdpte_value = pdpt_entries[pdpte]
+                    if not self.entry_present(pdpte_value):
+                        continue
+
+                    if self.page_size_flag(pdpte_value):
+                        if not hex(start_addr+step) in pml_enrty2:
+                            pml_enrty2.append(hex(start_addr+step))
+                        if with_pte: 
+                            yield (pdpte_value, vaddr, 0x40000000)
+                        else:
+                            yield (vaddr, 0x40000000)
+                        continue
+                    #print "pdpte_value", hex(pdpte_value)
+                    pd_base = self.pdba_base(pdpte_value)
+                    pd = self.base.read(pd_base, 0x200 * 8)
+                    if pd is None:
+                        continue
+                    pd_entries = struct.unpack('<512Q', pd)
+                    for key in pd_entries:
+                        if key == 0:
+                            continue
+                        #print bin(key), hex(key)
+                    prev_pd_entry = None
+                    for j in range(0, 0x200):
+                        soffset = (j * 0x200 * 0x200 * 8)
+
+                        entry = pd_entries[j]
+                        
+                        if self.skip_duplicate_entries and entry == prev_pd_entry:
+                            continue
+                        prev_pd_entry = entry
+                        if self.entry_present(entry) and self.page_size_flag(entry):
+                            if not hex(start_addr+step) in pml_enrty2:
+                                pml_enrty2.append(hex(start_addr+step))
+                            if with_pte: 
+                                yield (entry, vaddr + soffset, 0x200000)
+                            else:
+                                yield (vaddr + soffset, 0x200000)
+
+                        elif self.entry_present(entry):
+                            pt_base = entry & 0xFFFFFFFFFF000
+                            pt = self.base.read(pt_base, 0x200 * 8)
+                            if pt is None:
+                                continue
+                            pt_entries = struct.unpack('<512Q', pt)
+                            prev_pt_entry = None
+                            for k in range(0, 0x200):
+                                pt_entry = pt_entries[k]
+                                if self.skip_duplicate_entries and pt_entry == prev_pt_entry:
+                                    continue
+                                prev_pt_entry = pt_entry
+
+                                if self.entry_present(pt_entry):
+                                    if not hex(start_addr+step) in pml_enrty2:
+                                        pml_enrty2.append(hex(start_addr+step))
+                                    if with_pte:
+                                        yield (pt_entry, vaddr + soffset + k * 0x1000, 0x1000)
+                                    else:
+                                        yield (vaddr + soffset + k * 0x1000, 0x1000)
+                #print hex(key), "pml4e_value", hex(pml4e_value), hex(start_addr+step)
+                if not hex(start_addr+step) in pml_enrty:
+                    pml_enrty.append(hex(start_addr+step))
+            step += 0x200 * 8
+        #for item in pml_enrty:
+        #    print item
+        pml_enrty.sort()
+        pml_enrty2.sort()
+        print len(pml_enrty), len(pml_enrty2)
+        
     @classmethod
     def address_mask(cls, addr):
         return addr & 0xffffffffffff
