@@ -138,6 +138,20 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         #print "get_pml4e", hex(pml4e_paddr)
         return self.read_long_long_phys(pml4e_paddr)
 
+    def maybe_get_pml4e(self, vaddr, possible_dtb):
+        '''
+        This method returns the Page Map Level 4 (PML4) entry for the
+        virtual address. Bits 47:39 are used to the select the
+        appropriate 8 byte entry in the Page Map Level 4 Table.
+
+        "Bits 51:12 are from CR3" [Intel]
+        "Bits 11:3 are bits 47:39 of the linear address" [Intel]
+        "Bits 2:0 are 0" [Intel]
+        '''
+        pml4e_paddr = (int(possible_dtb, 16) & 0xffffffffff000) | ((vaddr & 0xff8000000000) >> 36)
+        #print "get_pml4e", hex(pml4e_paddr)
+        return self.read_long_long_phys(pml4e_paddr)
+
     def get_pdpi(self, vaddr, pml4e):
         '''
         This method returns the Page Directory Pointer entry for the
@@ -197,8 +211,36 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         vaddr = long(vaddr)
         retVal = None
         pml4e = self.get_pml4e(vaddr)
-        if vaddr == 0xffffffffacc09000:
-            print "vtop", hex(pml4e), hex(vaddr)
+        if not self.entry_present(pml4e):
+            return None
+
+        pdpe = self.get_pdpi(vaddr, pml4e)
+        if not self.entry_present(pdpe):
+            return retVal
+
+        if self.page_size_flag(pdpe):
+            return self.get_1GB_paddr(vaddr, pdpe)
+
+        pgd = self.get_pgd(vaddr, pdpe)
+        if self.entry_present(pgd):
+            if self.page_size_flag(pgd):
+                retVal = self.get_2MB_paddr(vaddr, pgd)
+            else:
+                pte = self.get_pte(vaddr, pgd)
+                if self.entry_present(pte):
+                    retVal = self.get_paddr(vaddr, pte)
+        return retVal
+    
+    def maybe_vtop(self, vaddr, possible_dtb):
+        '''
+        This method translates an address in the virtual
+        address space to its associated physical address.
+        Invalid entries should be handled with operating
+        system abstractions.
+        '''
+        vaddr = long(vaddr)
+        retVal = None
+        pml4e = self.maybe_get_pml4e(vaddr, possible_dtb)
         if not self.entry_present(pml4e):
             return None
 
@@ -403,10 +445,6 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                     if self.page_size_flag(pdpte_value):
                         if not hex(start_addr+step) in pml_enrty2:
                             pml_enrty2.append(hex(start_addr+step))
-                        if with_pte: 
-                            yield (pdpte_value, vaddr, 0x40000000)
-                        else:
-                            yield (vaddr, 0x40000000)
                         continue
                     #print "pdpte_value", hex(pdpte_value)
                     pd_base = self.pdba_base(pdpte_value)
@@ -430,10 +468,6 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                         if self.entry_present(entry) and self.page_size_flag(entry):
                             if not hex(start_addr+step) in pml_enrty2:
                                 pml_enrty2.append(hex(start_addr+step))
-                            if with_pte: 
-                                yield (entry, vaddr + soffset, 0x200000)
-                            else:
-                                yield (vaddr + soffset, 0x200000)
 
                         elif self.entry_present(entry):
                             pt_base = entry & 0xFFFFFFFFFF000
@@ -451,19 +485,15 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                                 if self.entry_present(pt_entry):
                                     if not hex(start_addr+step) in pml_enrty2:
                                         pml_enrty2.append(hex(start_addr+step))
-                                    if with_pte:
-                                        yield (pt_entry, vaddr + soffset + k * 0x1000, 0x1000)
-                                    else:
-                                        yield (vaddr + soffset + k * 0x1000, 0x1000)
                 #print hex(key), "pml4e_value", hex(pml4e_value), hex(start_addr+step)
                 if not hex(start_addr+step) in pml_enrty:
                     pml_enrty.append(hex(start_addr+step))
             step += 0x200 * 8
-        #for item in pml_enrty:
-        #    print item
+        
         pml_enrty.sort()
         pml_enrty2.sort()
-        print len(pml_enrty), len(pml_enrty2)
+        #print len(pml_enrty), len(pml_enrty2)
+        return pml_enrty2
         
     @classmethod
     def address_mask(cls, addr):

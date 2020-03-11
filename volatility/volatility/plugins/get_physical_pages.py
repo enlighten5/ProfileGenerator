@@ -44,7 +44,6 @@ class get_physical_pages(taskmods.DllList):
     def calculate(self):
         #image_name = os.path.basename(self._config.LOCATION)
         image_path = os.path.abspath(self._config.LOCATION).split(":")[1]
-        print "image path", image_path
         image_name = os.path.basename(self._config.LOCATION)
         self.log(image_name)
         #self.kernel_address_space = utils.load_as(self._config)
@@ -52,12 +51,30 @@ class get_physical_pages(taskmods.DllList):
         if WIN32_OR_64 == 32:
             self.kernel_address_space = i386.I386PagedMemory(image_path, 0x1420000)
         elif WIN32_OR_64 == 64:
+            print "config", self._config
             self.kernel_address_space = utils.load_as(self._config)
             #self.kernel_address_space = x64.X64PagedMemory(image_path, 0xff1490)
             #self.kernel_address_space = x64.X64PagedMemory(image_path, 0x1605000)
             
         available_pages = self.kernel_address_space.get_available_pages()
-        possible_pages = self.kernel_address_space.get_possible_pages(0x1000000)
+        self.log("get possible pages")
+        possible_dtb = self.kernel_address_space.get_possible_pages(0x1000000)
+        dtb = self.kernel_address_space.vtop(0xffff987a9bdab208)
+        print "dtb---->", hex(dtb)
+        mm = self.kernel_address_space.base.read(0x3810500 + 1928, 8)
+        print "tasks->>", "".join(x.encode('hex') for x in reversed(mm))
+
+        content = self.kernel_address_space.base.read(0x1bdab208 - 1928 + 2608, 8)
+        print "content->>", "".join(x.encode('hex') for x in reversed(content)), content
+            
+
+
+        for item in possible_dtb:
+            if self.kernel_address_space.maybe_vtop(0xffffffffacc09000, item):
+                print "found dtb", item
+                self.log("found dtb")
+
+        
         page_info = self.kernel_address_space.get_page_info(0x3810500, 4096)
         addr = page_info.keys()
         addr.sort()
@@ -85,7 +102,6 @@ class get_physical_pages(taskmods.DllList):
         dict_page_addr_to_size2 = {}
         if WIN32_OR_64 == 64:
             dict_page_addr_to_size = self.get_continuous_pages(available_pages)
-            dict_page_addr_to_size2 = self.get_continuous_pages(possible_pages)
             #for addr, size in available_pages:
             #    if addr > 0x80000000:
             #        dict_page_addr_to_size[addr] = size
@@ -102,15 +118,6 @@ class get_physical_pages(taskmods.DllList):
                 physical_addr = self.kernel_address_space.vtop(addr)
                 output.write(hex(addr)[:-1] + '\t' + hex(physical_addr)[:-1] + '\t' + str(size) + '\n')
 
-        with open(PAGES_OUTPUT_PATH + 'possible_pages.' + image_name, 'w') as output:
-            list_addr = dict_page_addr_to_size2.keys()
-            list_addr.sort()
-            for addr in list_addr:
-                size = dict_page_addr_to_size2[addr]
-                physical_addr = self.kernel_address_space.vtop(addr)
-                #output.write(hex(addr)[:-1] + '\t' + hex(physical_addr)[:-1] + '\t' + str(size) + '\n')
-                if not physical_addr == None:
-                    output.write(str(addr) + '\t' + str(physical_addr) + '\t' + str(size) + '\n')
         self.log('Finish')
 
     def render_text(self, outfd, data):

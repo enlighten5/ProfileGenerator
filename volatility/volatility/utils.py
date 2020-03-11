@@ -46,6 +46,8 @@ def load_as(config, astype = 'virtual', **kwargs):
             debug.debug("Trying {0} ".format(cls))
             try:
                 base_as = cls(base_as, config, astype = astype, **kwargs)
+                print config.PROFILE
+                print "Succeeded instantiating {0}".format(base_as)
                 debug.debug("Succeeded instantiating {0}".format(base_as))
                 found = True
                 break

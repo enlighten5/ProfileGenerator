@@ -33,7 +33,7 @@ class AbstractPagedMemory(addrspace.AbstractVirtualAddressSpace):
         self.as_assert(base, "No base Address Space")
 
         addrspace.AbstractVirtualAddressSpace.__init__(self, base, config, *args, **kwargs)
-
+        print "init abstract paded memory"
         ## We can not stack on someone with a dtb
         self.as_assert(not (hasattr(base, 'paging_address_space') and base.paging_address_space), "Can not stack over another paging address space")
 
@@ -87,7 +87,8 @@ class AbstractPagedMemory(addrspace.AbstractVirtualAddressSpace):
 
     def load_dtb(self):
         """Loads the DTB as quickly as possible from the config, then the base, then searching for it"""
-        #print "in load_dtb"
+        # zx012
+        print "in load_dtb"
         try:
             # If the user has manually specified one, then shortcircuit to that one
             if self._config.DTB:

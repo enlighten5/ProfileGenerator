@@ -2311,7 +2311,7 @@ class VolatilityDTB(obj.VolatilityMagic):
         profile = self.obj_vm.profile
         config = self.obj_vm.get_config()
         tbl    = self.obj_vm.profile.sys_map["kernel"]
-        print tbl["init_level4_pgt"]
+        print "profile", profile
         
         if profile.metadata.get('memory_model', '32bit') == "32bit":
             sym     = "swapper_pg_dir"
@@ -2350,8 +2350,9 @@ class VolatilityDTB(obj.VolatilityMagic):
         pid_offset    = profile.get_obj_offset("task_struct", "pid")
         files_offset  = profile.get_obj_offset("task_struct", "files") 
         mm_offset     = profile.get_obj_offset("task_struct", "active_mm")
+        tasks         = profile.get_obj_offset("task_struct", "tasks")
         pas           = self.obj_vm
-        print "comm offset", comm_offset, "pid", pid_offset, "mm offset", mm_offset
+        print "comm offset", comm_offset, "pid", pid_offset, "mm offset", mm_offset, "tasks", tasks
         if physical_shift_address != 0 and virtual_shift_address != 0:
             good_dtb = (dtb_sym_addr - shifts[0] - virtual_shift_address) + physical_shift_address
             self.obj_vm.profile.physical_shift = physical_shift_address 
