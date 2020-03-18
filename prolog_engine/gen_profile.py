@@ -24,11 +24,12 @@ def main():
     '''
     Scan for the swapper process and start from there
     '''
+    #extract_info_r("/home/zhenxiao/images/lubuntu_x64.bin", 0x3810500, 4096, set_vaddr_page, "/home/zhenxiao/images/tmp.txt")
     
-    paddr = vaddr_to_paddr(0xffff88001c278080) # apache task struct address
-    #paddr = 0x1477660
+    #paddr = vaddr_to_paddr(0xffff88001c278080) # apache task struct address
+    paddr = 0x3810500
     
-    construct_kb(image_path, paddr, 1024, set_vaddr_page)
+    construct_kb(image_path, paddr, 4096, set_vaddr_page)
     
     log('start prolog reasoning')
 

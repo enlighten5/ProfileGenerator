@@ -1,15 +1,38 @@
+import program as pg
 def main():
     paddr = 0x1605ff8
 
-    paddr = 0x1000000
-    #while paddr < 0x4000000:
+    paddr = 0xc0000
+    while paddr < 0xc0000 + 0xfb48:
     #    extract_info("/home/zhenxiao/images/lubuntu_x64.bin", paddr, 4096)
-    #    paddr += 4096
+        paddr += 4096
 
 
     paddr = 0x14775a8
-    extract_info("/home/zhenxiao/images/debian_x64.bin", paddr, 8)
+    #extract_info("/home/zhenxiao/images/debian_x64.bin", paddr, 8)
     #extract_info_r("/home/zhenxiao/images/debian_x64.bin", paddr, 2048, "/home/zhenxiao/ProfileGenerator/debian.pl")
+    #parse_dwarf('/home/zhenxiao/ProfileGenerator/volatility/volatility/plugins/overlays/linux/lubuntu64/volatility/tools/linux/module.dwarf')
+    extract_info("/home/zhenxiao/images/linux-sample-1.bin", 0x1605000, 4096)
+    
+def parse_dwarf(file_path):
+    with open(file_path, 'r') as dwarf:
+        line = dwarf.readline()
+        while line:
+            if "DW_TAG_structure_type" in line:
+                name_idx = line.find("DW_AT_name") + 1
+                name_end = line.find(">", name_idx)
+                name_idx += len("DW_AT_name")
+                print "struct:", line[name_idx: name_end]
+            elif "location" in line and "name" in line:
+                name_idx = line.find("DW_AT_name") + 1
+                name_end = line.find(">", name_idx)
+                name_idx += len("DW_AT_name")
+                offset_idx = line.find("DW_AT_data_member_location") + 1
+                offset_end = line.find(">", offset_idx)
+                offset_idx += len("DW_AT_data_member_location")
+                print "name", line[name_idx: name_end], "offset", line[offset_idx: offset_end]
+            line = dwarf.readline()
+
 def is_user_pointer(buf, idx):
     dest = (ord(buf[idx+7]) << 56) + (ord(buf[idx+6]) << 48) + (ord(buf[idx+5]) << 40) + (ord(buf[idx+4]) << 32) + (ord(buf[idx+3]) << 24) + (ord(buf[idx+2]) << 16) + (ord(buf[idx+1]) << 8) + ord(buf[idx])
     return dest
@@ -27,7 +50,7 @@ def extract_info(image_path, paddr, size):
         #    print "find it at", i
         #if not hex(is_user_pointer(content[i:i+8], 0)) == '0x0':
             #if '1f8fddc0' in hex(is_user_pointer(content[i:i+8], 0)):
-            
+            #if not hex(is_user_pointer(content[i:i+8], 0)) == '0x0':
             print("raw bytes at ", hex(paddr+i), i, content[i:i+8], hex(is_user_pointer(content[i:i+8], 0)))
             if 'swapper' in content[i:i+8]:
                 print "found swapper at", hex(paddr + i), i, content[i:i+8]
@@ -48,7 +71,7 @@ def extract_info(image_path, paddr, size):
                     tmp_len += 1
             if tmp_len == len(find_comm) and len(find_comm) > 2:
                 valid_comm[idx] = find_comm
-                #print("found string at", hex(paddr+idx), idx, find_comm)
+                print("found string at", hex(paddr+idx), idx, find_comm)
                 idx = idx + 7
             idx += 1
 

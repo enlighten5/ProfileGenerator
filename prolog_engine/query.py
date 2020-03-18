@@ -9,29 +9,36 @@ PWD = os.getenv('HOME') + "/ProfileGenerator/prolog_engine"
 Never print in this file, the stdout is directed to prolog
 """
 def main():
-    base_addr = sys.argv[1]
+    base_addr = int(sys.argv[1])
     query_rule = sys.argv[2]
+    if len(sys.argv) > 3:
+        comm_offset = sys.argv[3]
+    else:
+        comm_offset = None
     #print("check ", query_rule, "at ", base_addr)
     construct_kb(base_addr)
     p = Prolog()
     p.consult(PWD + "/knowledge/temp_kb.pl")
-    query = "possible_" + query_rule + "(Base)."
+    if comm_offset:
+        query = "possible_" + query_rule + "(Base, " + str(comm_offset) + ")."
+    else:
+        query = "possible_" + query_rule + "(Base)."
     result = []
     for s in p.query(query, catcherrors=False):
         result.append(s["Base"])
     #os.system("rm " + PWD + "/knowledge/temp_kb.pl")
     # 0 is false, 1 is true
     if len(result) > 0:
-        print 1
+        print(1)
     else:
-        print 0
+        print(0)
 
 
 def construct_kb(paddr):
-    size = 1024
+    size = 4096
     # change to the path of the memory image. 
-    image_path = "/home/zhenxiao/images/linux-sample-1.bin"
-    dict_paddr_to_size, set_vaddr_page = read_available_pages("linux-sample-1.bin")
+    image_path = "/home/zhenxiao/images/lubuntu_x64.bin"
+    dict_paddr_to_size, set_vaddr_page = read_available_pages("lubuntu_x64.bin")
     with open(PWD + "/knowledge/temp_kb.pl", 'w') as kb:
             kb.write("use_module(library(clpfd))." + "\n")
             kb.write(":- discontiguous(ispointer/3)." + "\n")

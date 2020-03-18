@@ -102,6 +102,11 @@ def extract_info(image_path, paddr, size, set_vaddr_page, name, file_h = None):
         #if not hex(is_user_pointer(content[i:i+8], 0)) == '0x0':
             print("raw bytes at ", hex(paddr + i), i, content[i:i+8], hex(is_user_pointer(content[i:i+8], 0)))
             i += 8 
+def read_memory(image_path, paddr, size):
+    paddr -= 0xfb48
+    image = open(image_path, 'r')
+    image.seek(paddr)
+    return image.read(size)
 
 def extract_info_r(image_path, paddr, size, set_vaddr_page, output):
     valid_pointer = {}
@@ -109,9 +114,10 @@ def extract_info_r(image_path, paddr, size, set_vaddr_page, output):
     valid_int = {}
     valid_long = {}
     
-    image = open(image_path, 'r')
-    image.seek(paddr)
-    content = image.read(size)
+    #image = open(image_path, 'r')
+    #image.seek(paddr)
+    #content = image.read(size)
+    content = read_memory(image_path, paddr, size)
     # find pointers
     i = 0
     while i < len(content):
@@ -129,13 +135,13 @@ def extract_info_r(image_path, paddr, size, set_vaddr_page, output):
     idx = 0
     while idx < len(content):
         tmp = content[idx:idx+8]
-        if tmp.startswith('\x00'):
+        if tmp.startswith('\x00') or tmp.startswith('\xff'):
             idx += 1
             continue
         find_comm = tmp.replace('\x00', '').replace('\xff', '')
         tmp_len = 0
         for item in find_comm:
-            if ord(item) >= 0x30 and ord(item) <= 0x7f:
+            if ord(item) >= 0x20 and ord(item) <= 0x7f:
                 tmp_len += 1
         if tmp_len == len(find_comm) and len(find_comm) > 2:
             valid_comm[idx] = find_comm
@@ -148,7 +154,7 @@ def extract_info_r(image_path, paddr, size, set_vaddr_page, output):
     #for i in range(len(content)):
         tmp = content[i:i+4]
         if not tmp.endswith("\x00\x00"):
-            i += 1
+            i += 4
             continue
         # not entirely true    
         if len(tmp.replace('\xff', '')) < 4:
@@ -158,13 +164,12 @@ def extract_info_r(image_path, paddr, size, set_vaddr_page, output):
         summ = 0
         for idx in reversed(range(len(tmp))):
             summ += ord(tmp[idx]) << 8*idx
-            if ord(tmp[idx]) < 0xff and ord(tmp[idx]) > 0x00:
+            if ord(tmp[idx]) < 0xff and ord(tmp[idx]) >= 0x00:
                 tmp_len += 1
         if summ < 9000 and tmp_len > 0:
             valid_int[i] = summ
-            i += 3
             #print("found pid", i, tmp, summ)
-        i += 1
+        i += 4
 
     i = 0  
     while i < len(content)-8:
@@ -200,31 +205,31 @@ def extract_info_r(image_path, paddr, size, set_vaddr_page, output):
         #if not hex(is_user_pointer(content[i:i+8], 0)) == '0x0':
     #        print("raw bytes at ", paddr + i, content[i:i+8], hex(is_user_pointer(content[i:i+8], 0)))
     #    i += 8 
-    image.close()
+    #image.close()
 
     kb_all = open(output, 'a')
     keys = valid_pointer.keys()
     keys.sort()
     for key in keys:
-        fact = "ispointer(" + str(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+        fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
         kb_all.write(fact)
           
     keys = valid_int.keys()
     keys.sort()
     for key in keys:
-        fact = "isint(" + str(paddr) + "," + str(key) + "," + str(valid_int[key]) + ")." + "\n"
+        fact = "isint(" + hex(paddr) + "," + str(key) + "," + str(valid_int[key]) + ")." + "\n"
         kb_all.write(fact)
 
     keys = valid_comm.keys()
     keys.sort()
     for key in keys:
-        fact = "isstring(" + str(paddr) + "," + str(key) + "," + "string" + ")." + "\n"
+        fact = "isstring(" + hex(paddr) + "," + str(key) + "," + "string" + ")." + "\n"
         kb_all.write(fact)
         
     keys = valid_long.keys()
     keys.sort()
     for key in keys:
-        fact = "islong(" + str(paddr) + "," + str(key) + "," + str(valid_long[key]) + ")." + "\n"
+        fact = "islong(" + hex(paddr) + "," + str(key) + "," + str(valid_long[key]) + ")." + "\n"
         kb_all.write(fact)
 
     kb_all.write("\n")

@@ -235,7 +235,10 @@ class AbstractDiscreteAllocMemory(BaseAddressSpace):
         buff = []
         lenbuff = 0
         read = self.base.zread if pad else self.base.read
-
+        if addr == 140737341566960:
+            print "--------------------------------------------2"
+        #if self.translate(addr):
+        #    print hex(addr), hex(self.translate(addr)), self.translate(addr) - addr
         # For each allocation...
         while remaining > 0:
             # Determine whether we're within an alloc or not
@@ -245,9 +248,13 @@ class AbstractDiscreteAllocMemory(BaseAddressSpace):
             datalen = min(remaining, alloc_remaining)
             if paddr is None:
                 if not pad:
+                    if addr == 140737341566960:
+                        print "paddr is none"
                     return None
                 buff.append("\x00" * datalen)
                 lenbuff += datalen
+                if addr == 140737341566960:
+                    print "paddr is none"
             else:
                 # This accounts for a special edge case
                 # when the address is valid in this address space
@@ -266,6 +273,8 @@ class AbstractDiscreteAllocMemory(BaseAddressSpace):
             remaining -= datalen
             assert (addr + length == position + remaining), "Address + length != position + remaining (" + hex(addr + length) + " != " + hex(position + remaining) + ") in " + self.base.__class__.__name__
             assert (position - addr == lenbuff), "Position - address != len(buff) (" + str(position - addr) + " != " + str(lenbuff) + ") in " + self.base.__class__.__name__
+        if addr == 140737341566960:
+            print "".join(buff)
         return "".join(buff)
 
     def read(self, addr, length):
@@ -307,6 +316,8 @@ class AbstractRunBasedMemory(AbstractDiscreteAllocMemory):
 
         @param addr: a memory address
         """
+        if addr == 140737341566960:
+            print "----------------------------------------------------------1"
         for input_addr, output_addr, length in self.runs:
             if addr >= input_addr and addr < input_addr + length:
                 return output_addr + (addr - input_addr)

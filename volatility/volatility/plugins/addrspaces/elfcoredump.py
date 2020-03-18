@@ -76,13 +76,13 @@ class VirtualBoxCoreDumpElf64(addrspace.AbstractRunBasedMemory):
         ## We must have an AS below us
         self.as_assert(base, "No base Address Space")
         addrspace.AbstractRunBasedMemory.__init__(self, base, config, **kwargs)
-
+        print "init virtualbox"
         ## Quick test (before instantiating an object) 
         ## for ELF64, little-endian - ELFCLASS64 and ELFDATA2LSB
         ## for ELF32, little-endian - ELFCLASS32 and ELFDATA2LSB
         self.as_assert(base.read(0, 6) in ['\x7fELF\x02\x01', '\x7fELF\x01\x01'], 
                        "ELF Header signature invalid")
-
+        print "after init virtualbox"
         ## Base AS should be a file AS
         elf = obj.Object("elf_hdr", offset = 0, vm = base)
 

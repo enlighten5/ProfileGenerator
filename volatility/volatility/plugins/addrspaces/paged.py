@@ -33,7 +33,6 @@ class AbstractPagedMemory(addrspace.AbstractVirtualAddressSpace):
         self.as_assert(base, "No base Address Space")
 
         addrspace.AbstractVirtualAddressSpace.__init__(self, base, config, *args, **kwargs)
-        print "init abstract paded memory"
         ## We can not stack on someone with a dtb
         self.as_assert(not (hasattr(base, 'paging_address_space') and base.paging_address_space), "Can not stack over another paging address space")
 
@@ -42,7 +41,9 @@ class AbstractPagedMemory(addrspace.AbstractVirtualAddressSpace):
 
         self.as_assert(self.dtb != None, "No valid DTB found")
 
-        if not skip_as_check:
+        # zx012 skip this check to bypass virtual/physical shift check
+        #if not skip_as_check:
+        if skip_as_check:
             volmag = obj.VolMagic(self)
             if hasattr(volmag, self.checkname):
                 self.as_assert(getattr(volmag, self.checkname).v(), "Failed valid Address Space check")
@@ -100,7 +101,8 @@ class AbstractPagedMemory(addrspace.AbstractVirtualAddressSpace):
         except AttributeError:
             ## Ok so we need to find our dtb ourselves:
             dtb = obj.VolMagic(self.base).DTB.v()
-            #print "find dtb by ourselves", dtb
+            # zx012 .DTB is a volatiliryDTB class which inherit from VolatilityMagic. The .v() is implemented in VolatilityMagic and calls get_suggestions()
+            #print "find dtb by ourselves", obj.VolMagic(self.base).DTB
             if dtb:
                 ## Make sure to save dtb for other AS's
                 ## Will this have an effect on following ASes attempts if this fails?

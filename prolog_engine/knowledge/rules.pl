@@ -1,10 +1,6 @@
 % use_module(library(clpfd)).
 :- style_check(-singleton).
 
-
-/*possible_task_struct(530138944).*/
-/*possible_task_struct(23121952).*/
-
 possible_task_struct(Base_addr) :- 
     /* void *stack */
     ispointer(Base_addr, Stack_offset, Stack_value),
@@ -144,6 +140,9 @@ possible_fs_struct(Base_addr) :-
 
 possible_tlbflush_unmap_batch(Base_addr):- 
     ispointer(Base_addr, Offset, Value).
+
+possible_ts(Base_addr, Comm_offset):-
+    isstring(Base_addr, Comm_offset, Comm_value).
 
 print_nl(Name, Content) :- 
     print(Name),

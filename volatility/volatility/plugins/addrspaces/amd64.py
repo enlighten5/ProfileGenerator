@@ -163,6 +163,7 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         "Bits 2:0 are all 0" [Intel]
         '''
         pdpte_paddr = (pml4e & 0xffffffffff000) | ((vaddr & 0x7FC0000000) >> 27)
+        print "pml4e", pml4e, "pdpte_paddr", pdpte_paddr
         return self.read_long_long_phys(pdpte_paddr)
 
     def get_1GB_paddr(self, vaddr, pdpte):
@@ -275,10 +276,14 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         This code was derived directly from legacyintel.py
         '''
         try:
+            #if addr == 140737341566960:
+            print "read longlong phys", addr
             string = self.base.read(addr, 8)
         except IOError:
             string = None
         if not string:
+            if addr == 140737341566960:
+                print "fail to read in in longlongphys"
             return obj.NoneObject("Unable to read_long_long_phys at " + hex(addr))
         longlongval, = self._longlong_struct.unpack(string)
         return longlongval
@@ -312,6 +317,7 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         print "amd64 get_physical_pages"
         # read the full pml4
         pml4 = self.base.read(self.dtb & 0xffffffffff000, 0x200 * 8)
+        print self.base.read
         if pml4 is None:
             return
 
@@ -405,9 +411,10 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         pml_enrty = []
         pml_enrty2 = []
         step = 0
-        while step < 0x5000000:
+        while step < 0x10000:
             # read the full pml4
             pml4 = self.base.read(start_addr+step & 0xffffffffff000, 0x200 * 8)
+            print "read pml4", hex(start_addr+step) 
             if pml4 is None:
                 continue
 
@@ -432,6 +439,7 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
                     continue
 
                 pdpt_base = (pml4e_value & 0xffffffffff000)
+                print "read pdpt_base", pdpt_base
                 pdpt = self.base.read(pdpt_base, 0x200 * 8)
                 if pdpt is None:
                     continue

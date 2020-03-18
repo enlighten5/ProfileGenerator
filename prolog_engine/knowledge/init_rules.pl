@@ -29,26 +29,38 @@ possible_task_struct(Base_addr) :-
 
     ispointer(Base_addr, MM_offset, MM_pointer),
     MM_offset < Tgid_offset,
-    MM_offset > 400,
     
     ispointer(Base_addr, MM_offset2, MM_pointer),
     MM_offset2 is MM_offset + 8,
-    possible_mm_struct(MM_pointer),
+    % possible_mm_struct(MM_pointer),
 
 
-    /* comm */
-/*
-    isstring(Base_addr, Comm_offset, Comm_value),
-    Comm_offset > MM_offset2,*/
 
     /*list_head_next(Task_value, List_head_offset),*/
 
 
-    /* task_struct *parent */
+    /* task_struct *real_parent 
+       task_struct *parent
+       task_struct *children
+    */
     
     ispointer(Base_addr, Parent_offset, Parent_value),
     Parent_offset > Tgid_offset,
     Parent_offset < Tgid_offset + 20,
+
+    ispointer(Base_addr, Parent_offset2, Parent_value2),
+    Parent_offset2 is Parent_offset + 8,
+
+    ispointer(Base_addr, Child_offset, Child_value),
+    Child_offset is Parent_offset2 + 8,
+
+    isstring(Base_addr, Comm_offset, Comm_value),
+    Comm_offset > Child_offset,
+
+    possible_ts(Parent_value, Comm_offset),
+    % possible_ts(Parent_value2, Comm_offset),
+    % possible_ts(Child_value, Comm_offset),
+
     % This did not pass the test
     % task_struct_r(Parent_value),
 
@@ -56,6 +68,7 @@ possible_task_struct(Base_addr) :-
     print_nl('stack', Stack_offset),
     print_nl('task', Tasks_offset),
     print_nl('pid', Pid_offset),
+    print_nl('comm', Comm_offset),
     print_nl('mm_struct', MM_offset2).
 
 
@@ -112,6 +125,14 @@ possible_fs_struct(Base_addr) :-
 possible_tlbflush_unmap_batch(Base_addr):- 
     process_create(path('python'),
                     ['query.py', Base_addr, "tlbflush_unmap_batch"],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    isTrue(Result).
+
+possible_ts(Base_addr, Comm_offset):-
+    process_create(path('python'),
+                    ['query.py', Base_addr, "ts", Comm_offset],
                     [stdout(pipe(In))]),
     read_string(In, Len, X),
     string_codes(X, Result),

@@ -302,6 +302,7 @@ class elf_hdr(elf):
         return self.elf_obj != None
         
     def program_headers(self):
+        print "program headers"
         rtname = self._get_typename("phdr")
         rtsize = self.obj_vm.profile.get_obj_size(rtname)
 
@@ -324,6 +325,7 @@ class elf_hdr(elf):
 
             phdr = obj.Object("elf_phdr", offset = arr_start + idx, vm = self.obj_vm, parent = self)
             if phdr.is_valid():
+                print "phdr vaddr", phdr.p_paddr, phdr.p_offset, phdr.p_memsz
                 yield phdr  
 
     def _section_headers(self):
