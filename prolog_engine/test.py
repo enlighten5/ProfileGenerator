@@ -11,8 +11,8 @@ def main():
     paddr = 0x14775a8
     #extract_info("/home/zhenxiao/images/debian_x64.bin", paddr, 8)
     #extract_info_r("/home/zhenxiao/images/debian_x64.bin", paddr, 2048, "/home/zhenxiao/ProfileGenerator/debian.pl")
-    #parse_dwarf('/home/zhenxiao/ProfileGenerator/volatility/volatility/plugins/overlays/linux/lubuntu64/volatility/tools/linux/module.dwarf')
-    extract_info("/home/zhenxiao/images/linux-sample-1.bin", 0x1605000, 4096)
+    #parse_dwarf('/home/zhenxiao/ProfileGenerator/volatility/volatility/plugins/overlays/linux/book/module.dwarf')
+    extract_info("/home/zhenxiao/images/lubuntu_x64_ASLR.bin", 0x11210500, 4096)
     
 def parse_dwarf(file_path):
     with open(file_path, 'r') as dwarf:
@@ -51,7 +51,8 @@ def extract_info(image_path, paddr, size):
         #if not hex(is_user_pointer(content[i:i+8], 0)) == '0x0':
             #if '1f8fddc0' in hex(is_user_pointer(content[i:i+8], 0)):
             #if not hex(is_user_pointer(content[i:i+8], 0)) == '0x0':
-            print("raw bytes at ", hex(paddr+i), i, content[i:i+8], hex(is_user_pointer(content[i:i+8], 0)))
+            #print("raw bytes at ", hex(paddr+i), i, content[i:i+8], hex(is_user_pointer(content[i:i+8], 0)))
+            print hex(paddr+i), i, content[i:i+8], hex(is_user_pointer(content[i:i+8], 0))
             if 'swapper' in content[i:i+8]:
                 print "found swapper at", hex(paddr + i), i, content[i:i+8]
             i += 8 

@@ -6,13 +6,9 @@ offset = [
     (0, 1208, 655360),
     (655360, 656568, 65536),
     (786432, 722104, 536084480),
-    (786432, 722104, 536084480),
+    (4244635648, 536806584, 16777216),
     (4294705152, 553583800, 262144)
 ]
-
-def log(message):
-    print('%s\t%s' %(strftime("%Y-%m-%d %H:%M:%S", gmtime()), message))
-    sys.stdout.flush()
 
 class AddressSpace(linux.AMD64PagedMemory):
     def __init__(self, mem_path, dtb = 0):
@@ -29,6 +25,7 @@ class AddressSpace(linux.AMD64PagedMemory):
             sys.exit(1)
 
         self.offset = offset
+        self.mem_path = mem_path
         self.mem.seek(0)
         if "ELF" in self.mem.read(6):
             self.has_elf_header = True
@@ -45,6 +42,10 @@ class AddressSpace(linux.AMD64PagedMemory):
             self.dtb = dtb
         else:
             self.find_dtb(0x1000000)
+
+    def log(self, message):
+        print('%s\t%s' %(strftime("%Y-%m-%d %H:%M:%S", gmtime()), message))
+        sys.stdout.flush()
 
     def translate(self, addr):
         for input_addr, output_addr, length in self.offset:
@@ -82,7 +83,7 @@ class AddressSpace(linux.AMD64PagedMemory):
         Page Directory, and Page Table to determine which pages
         are accessible.
         '''
-        log("find dtb")
+        self.log("find dtb")
         for step in range(0, self.mem.size() - start_addr, 4096):
             # read the full pml4
             pml4 = self.read_memory(start_addr+step & 0xffffffffff000, 0x200 * 8)
@@ -124,7 +125,7 @@ class AddressSpace(linux.AMD64PagedMemory):
 
                     if self.page_size_flag(pdpte_value):
                         if self.maybe_vtop(self.dtb_vaddr, start_addr+step):
-                            log("found dtb " + hex(start_addr+step))
+                            self.log("found dtb " + hex(start_addr+step))
                             self.dtb = start_addr + step
                             return start_addr + step
                         continue
@@ -150,7 +151,7 @@ class AddressSpace(linux.AMD64PagedMemory):
                         prev_pd_entry = entry
                         if self.entry_present(entry) and self.page_size_flag(entry):
                             if self.maybe_vtop(self.dtb_vaddr, start_addr+step):
-                                log("found dtb " + hex(start_addr+step))
+                                self.log("found dtb " + hex(start_addr+step))
                                 self.dtb = start_addr + step
                                 return start_addr + step
 
@@ -169,12 +170,81 @@ class AddressSpace(linux.AMD64PagedMemory):
 
                                 if self.entry_present(pt_entry):
                                     if self.maybe_vtop(self.dtb_vaddr, start_addr+step):
-                                        log("found dtb " + hex(start_addr+step))
+                                        self.log("found dtb " + hex(start_addr+step))
                                         self.dtb = start_addr + step
                                         return start_addr + step
         if self.dtb == 0:
             print "fail to find dtb.\n"
         return 0
+
+    def extract_info(self, paddr, output, size = 4096):
+        valid_pointer = {}
+        valid_long = {}
+        valid_int = {}
+        valid_stirng = {}
+        content = self.read_memory(paddr, size)
+        value = struct.unpack("<512Q", content)
+        # There may be some potential issues about identifying long and int
+        for item in range(len(value)):
+            number = value[item]
+            phys_addr = self.vtop(number)
+            if phys_addr:
+                #print "pointer", hex(number), hex(self.vtop(number)), item*8
+                #if phys_addr - item*8 == paddr:
+                #    continue
+                valid_pointer[item*8] = phys_addr
+                pass
+            else:
+                #number = int(number)
+                if number < 0xffff:
+                    #print "int: ", hex(number), item*8
+                    #valid_int[item*8] = number
+                    if number == 0x0:
+                        valid_pointer[item*8] = number
+                    pass
+                elif number < 0xffffffffffff:
+                    #print "unsigned long: ", hex(number), item*8
+                    valid_long[item*8] = number
+                elif number == 0xffffffffffffffff:
+                    pass
+                else:
+                    #print "string: ", hex(number), item*8, content[item*8:item*8+8]
+                    valid_stirng[item*8] = number
+                    
+        value = struct.unpack("<1024I", content)
+        for idx in range(len(value)):
+            number = value[idx]
+            # This value is very ad hoc
+            if number < 0x7fff:
+                #print "int: ", hex(number), idx*4
+                valid_int[idx*4] = number
+        
+
+        
+        with open(output, 'a') as output:
+            keys = valid_pointer.keys()
+            keys.sort()
+            for key in keys:
+                fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                output.write(fact)
+            keys = valid_long.keys()
+            keys.sort()
+            for key in keys:
+                fact = "islong(" + hex(paddr) + "," + str(key) + "," + str(valid_long[key]) + ")." + "\n"
+                output.write(fact)
+            keys = valid_int.keys()
+            keys.sort()
+            for key in keys:
+                fact = "isint(" + hex(paddr) + "," + str(key) + "," + str(valid_int[key]) + ")." + "\n"
+                output.write(fact)
+            keys = valid_stirng.keys()
+            keys.sort()
+            for key in keys:
+                fact = "isstring(" + hex(paddr) + "," + str(key) + "," + str(valid_stirng[key]) + ")." + "\n"
+                output.write(fact)
+            
+            
+        
 
     
 def test():
@@ -202,7 +272,7 @@ def test():
 
     for idx in range(0, len(value), 8):
         pass
-#        print value[idx: idx+8]
+        print value[idx: idx+8]
     mem.seek(0)
     content = mem.read(6)
     print content
@@ -215,16 +285,24 @@ def test():
         for item in value:
             if value == 536084480:
                 print addr
-
     mem.close()   
-def main():
 
+def main():
     if len(sys.argv) < 2:
         print "Error: please specify memory path and dtb_vaddr.\n"
         sys.exit(1)
     mem_path = sys.argv[1]
-    addr_space = AddressSpace(mem_path)
-    print addr_space.vtop(0xffffffffacc09000)
+    #addr_space = AddressSpace(mem_path, 0x3809000)
+    addr_space = AddressSpace(mem_path, 0x11209000)
+    paddr = addr_space.vtop(0xffffffffbbc10500)
+    #paddr = 0x11210500
+    print hex(paddr)
+    addr_space.extract_info(paddr, "./tmp")
+    print addr_space.read_memory(paddr+2608, 8)
+    #addr_space.extract_info(376393600, "./tmp")
+    #addr_space.extract_info(467322696, "./tmp")
+    # 0x1bdab208 this should be where the *next pointer points to. so this is the value in the field *next
+
     
     
 

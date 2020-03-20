@@ -1,6 +1,9 @@
 % use_module(library(clpfd)).
 :- style_check(-singleton).
 
+isTrue([E|ES]) :- 
+    E == 49.
+
 possible_task_struct(Base_addr) :- 
     /* void *stack */
     ispointer(Base_addr, Stack_offset, Stack_value),
@@ -61,12 +64,20 @@ possible_mm_struct(Base_addr) :-
     Offset1 = 0,
     ispointer(Base_addr, Offset2, Value2),
     Offset2 is Offset1 + 8,
-    ispointer(Base_addr, Offset3, Value3),
-    Offset3 is Offset2 + 8,
+    /* comment this because it does not hold for new kernel*/
+    /*ispointer(Base_addr, Offset3, Value3),
+    Offset3 is Offset2 + 8, */
     ispointer(Base_addr, Offset4, Value4),
-    Offset4 is Offset3 + 8,
-    ispointer(Base_addr, Offset5, Value5),
-    Offset5 is Offset4 + 8,
+    Offset4 is Offset2 + 16,
+    /* comment this because it does not hold for new kernel*/
+    /*ispointer(Base_addr, Offset5, Value5),
+    Offset5 is Offset4 + 8,*/
+
+    islong(Base_addr, Mmap_base_offset, Mmap_base_value),
+    Mmap_base_offset < Offset4 + 17,
+    islong(Base_addrm, Task_size_offset, Task_size_value),
+    Task_size_offset < Mmap_base_offset + 16,
+
     /*
         unsigned long start_code, end_code, start_data, end_data;
         unsigned long start_brk, brk, start_stack;
@@ -106,12 +117,20 @@ possible_sched_info(Base_addr) :-
     Offset1 < 10.
 
 
-possible_list_head(Base_addr) :- 
-    /*print_nl('find list_head', ''),*/
+possible_list_head(Base_addr, Comm_offset, Tasks_offset) :- 
+    /* print_nl('find list_head', ''), */
     ispointer(Base_addr, Offset1, Value1),
     Offset1 is 0,
     ispointer(Base_addr, Offset2, Value2),
-    Offset2 is Offset1 + 8.
+    Offset2 is Offset1 + 8,
+    /* create process to reason about whether Value1 points to another task struct */
+    process_create(path('python'),
+                    ['subquery.py', Value1, "list_head_ts", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
     /*list_head_next(Value1, Offset1),*/
 
 list_head_next(Base_addr, List_head_offset, Comm_offset) :- 
@@ -141,8 +160,21 @@ possible_fs_struct(Base_addr) :-
 possible_tlbflush_unmap_batch(Base_addr):- 
     ispointer(Base_addr, Offset, Value).
 
-possible_ts(Base_addr, Comm_offset):-
-    isstring(Base_addr, Comm_offset, Comm_value).
+possible_ts(Base_addr, Comm_offset, Tasks_offset):-
+    isstring(Base_addr, Comm_offset, Comm_value),
+    ispointer(Base_addr, Tasks_offset, Tasks_value),
+    process_create(path('python'),
+                    ['subquery.py', Tasks_value, "list_head", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+
+possible_list_head_ts(Base_addr, Comm_offset, Tasks_offset) :- 
+    New_offset is Comm_offset - Tasks_offset,
+    isstring(Base_addr, New_offset, Comm_value).
 
 print_nl(Name, Content) :- 
     print(Name),
