@@ -26,7 +26,6 @@ class SubQuery(pq.PrologQuery):
             query_cmd = "possible_" + query_rule + "(Base, " + str(comm_offset) + ", " + str(task_offset) + ")."
         if not comm_offset and not task_offset:
             query_cmd = "possible_" + query_rule + "(Base)."
-        
         result = []
         for s in p.query(query_cmd, catcherrors=False):
             result.append(s["Base"])

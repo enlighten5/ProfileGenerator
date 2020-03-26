@@ -1,0 +1,364 @@
+ELF headers
+dtb_vaddr 0xffffffffacc09000
+-- 0
+
+2020-03-25 04:04:00	find dtb
+2020-03-25 04:04:04	found dtb 0x3809000
+[-]  0 pointer 0
+[-]  16 pointer 0xffffb0a5c00d0000L 0x1bd79000L
+[-]  24 string:  0x40010000000002 @
+[-]  32 pointer 0
+[-]  40 pointer 0
+[-]  48 pointer 0
+[-]  56 pointer 0
+[-]  64 pointer 0
+[-]  72 pointer 0
+[-]  80 pointer 0
+[-]  88 unsigned long:  0x7800000078
+[-]  104 pointer 0xffffffffac8289c0L 0x34289c0L
+[-]  112 pointer 0
+[-]  120 pointer 0
+[-]  128 unsigned long:  0x100000
+[-]  136 unsigned long:  0x400000
+[-]  152 pointer 0
+[-]  160 pointer 0
+[-]  168 pointer 0xffff987a9bdac068L 0x1bdac068L
+[-]  176 pointer 0xffff987a9bdac068L 0x1bdac068L
+[-]  184 pointer 0
+[-]  192 unsigned long:  0x79e30d029
+[-]  200 unsigned long:  0x2f4dd514
+[-]  208 unsigned long:  0xa83d330
+[-]  216 unsigned long:  0x2f49bf28
+[-]  224 pointer 0
+[-]  232 pointer 0
+[-]  240 pointer 0
+[-]  248 pointer 0
+[-]  256 pointer 0
+[-]  264 pointer 0
+[-]  272 pointer 0
+[-]  280 pointer 0
+[-]  288 pointer 0
+[-]  296 pointer 0
+[-]  304 pointer 0
+[-]  312 pointer 0
+[-]  320 pointer 0
+[-]  328 pointer 0
+[-]  336 pointer 0
+[-]  344 pointer 0
+[-]  352 pointer 0
+[-]  360 pointer 0
+[-]  368 pointer 0
+[-]  376 pointer 0
+[-]  384 pointer 0
+[-]  392 pointer 0
+[-]  400 pointer 0
+[-]  408 pointer 0
+[-]  416 pointer 0
+[-]  424 pointer 0
+[-]  432 pointer 0
+[-]  440 pointer 0
+[-]  456 pointer 0xffff987a9ede5800L 0x1ede5800L
+[-]  464 pointer 0xffff987a9ede5400L 0x1ede5400L
+[-]  472 pointer 0
+[-]  480 pointer 0
+[-]  488 pointer 0
+[-]  496 pointer 0
+[-]  504 pointer 0
+[-]  512 unsigned long:  0x79e30d029
+[-]  520 unsigned long:  0x2d7960
+[-]  528 unsigned long:  0x2c60025ecd1
+[-]  552 pointer 0
+[-]  560 pointer 0
+[-]  568 pointer 0
+[-]  576 pointer 0xffff987a9bdac200L 0x1bdac200L
+[-]  584 pointer 0xffff987a9bdac200L 0x1bdac200L
+[-]  592 pointer 0
+[-]  600 pointer 0
+[-]  616 pointer 0
+[-]  624 pointer 0xffff987a9eda6500L 0x1eda6500L
+[-]  632 pointer 0xffff987a9bdac238L 0x1bdac238L
+[-]  640 pointer 0
+[-]  648 pointer 0
+[-]  656 pointer 0
+[-]  664 pointer 0
+[-]  672 pointer 0
+[-]  680 pointer 0
+[-]  688 pointer 0
+[-]  696 pointer 0
+[-]  704 pointer 0
+[-]  712 pointer 0
+[-]  720 pointer 0xffff987a9bdac290L 0x1bdac290L
+[-]  728 pointer 0
+[-]  736 pointer 0
+[-]  744 pointer 0
+[-]  752 pointer 0
+[-]  760 pointer 0xffffffffabecc010L 0x2acc010L
+[-]  768 pointer 0xffff987a9fc12280L 0x1fc12280L
+[-]  776 string:  0xffffffff00000000L ����
+[-]  784 pointer 0
+[-]  792 pointer 0
+[-]  800 pointer 0
+[-]  808 pointer 0
+[-]  816 pointer 0
+[-]  1856 pointer 0
+[-]  1864 pointer 0
+[-]  1872 pointer 0xffff987a9bdac710L 0x1bdac710L
+[-]  1880 pointer 0xffff987a9bdac710L 0x1bdac710L
+[-]  1888 unsigned long:  0xffffffff
+[-]  1904 unsigned long:  0xce1f8d1
+[-]  1912 unsigned long:  0x79e2cba3d
+[-]  1920 pointer 0
+[-]  1928 pointer 0xffff987a9bdab208L 0x1bdab208L
+[-]  1936 pointer 0xffffffffacc10c88L 0x3810c88L
+[-]  1952 pointer 0xffff987a9bdac760L 0x1bdac760L
+[-]  1960 pointer 0xffff987a9bdac760L 0x1bdac760L
+[-]  1968 pointer 0xffff987a9bdac770L 0x1bdac770L
+[-]  1976 pointer 0xffff987a9bdac770L 0x1bdac770L
+[-]  1984 pointer 0xffff987a9bdac780L 0x1bdac780L
+[-]  1992 pointer 0
+[-]  2000 pointer 0
+[-]  2008 pointer 0xffff987a9ee966c0L 0x1ee966c0L
+[-]  2016 pointer 0xffff987a9ee966c0L 0x1ee966c0L
+[-]  2032 pointer 0
+[-]  2040 pointer 0
+[-]  2048 pointer 0xffff987a9ee3e7d0L 0x1ee3e7d0L
+[-]  2056 pointer 0
+[-]  2080 pointer 0
+[-]  2088 unsigned long:  0x1100000000
+[-]  2096 pointer 0
+[-]  2104 pointer 0
+[-]  2112 pointer 0
+[-]  2120 pointer 0
+[-]  2128 pointer 0
+[-]  2136 pointer 0xffffffffabe98bc0L 0x2a98bc0L
+[-]  2144 pointer 0
+[-]  2152 pointer 0
+[-]  2160 pointer 0
+[-]  2168 pointer 0
+[-]  2176 pointer 0
+[-]  2184 unsigned long:  0x100000001
+[-]  2192 unsigned long:  0x6c9ce8b1
+[-]  2200 pointer 0xffffffffacc10500L 0x3810500L
+[-]  2208 pointer 0xffffffffacc10500L 0x3810500L
+[-]  2216 pointer 0xffff987a9ed6b338L 0x1ed6b338L
+[-]  2224 pointer 0xffff987a940188b8L 0x140188b8L
+[-]  2232 pointer 0xffff987a9bdab338L 0x1bdab338L
+[-]  2240 pointer 0xffffffffacc10da8L 0x3810da8L
+[-]  2248 pointer 0xffff987a9bdabfc0L 0x1bdabfc0L
+[-]  2256 pointer 0xffff987a9bdac890L 0x1bdac890L
+[-]  2264 pointer 0xffff987a9bdac890L 0x1bdac890L
+[-]  2272 pointer 0xffff987a9bdac8a0L 0x1bdac8a0L
+[-]  2280 pointer 0xffff987a9bdac8a0L 0x1bdac8a0L
+[-]  2288 pointer 0
+[-]  2296 pointer 0xffff987a9bd7ee08L 0x1bd7ee08L
+[-]  2304 pointer 0xffff987a9bd7ee00L 0x1bd7ee00L
+[-]  2312 pointer 0
+[-]  2320 pointer 0xffff987a9bd7ee10L 0x1bd7ee10L
+[-]  2328 pointer 0xffff987a9bd7ee00L 0x1bd7ee00L
+[-]  2336 pointer 0
+[-]  2344 pointer 0xffff987a9bd7ee18L 0x1bd7ee18L
+[-]  2352 pointer 0xffff987a9bd7ee00L 0x1bd7ee00L
+[-]  2360 pointer 0xffff987a9bdac8f8L 0x1bdac8f8L thread_group
+[-]  2368 pointer 0xffff987a9bdac8f8L 0x1bdac8f8L
+[-]  2376 pointer 0xffff987a9bdb6ed0L 0x1bdb6ed0L
+[-]  2384 pointer 0xffff987a9bdb6ed0L 0x1bdb6ed0L
+[-]  2392 pointer 0
+[-]  2400 pointer 0
+[-]  2408 unsigned long:  0x7ff6bd529b90
+[-]  2432 pointer 0
+[-]  2440 pointer 0
+[-]  2448 pointer 0
+[-]  2456 pointer 0
+[-]  2480 unsigned long:  0x1312d00
+[-]  2488 unsigned long:  0x1312d00
+[-]  2512 pointer 0
+[-]  2520 pointer 0
+[-]  2528 pointer 0
+[-]  2536 pointer 0xffff987a9bdac9a8L 0x1bdac9a8L
+[-]  2544 pointer 0xffff987a9bdac9a8L 0x1bdac9a8L
+[-]  2552 pointer 0xffff987a9bdac9b8L 0x1bdac9b8L
+[-]  2560 pointer 0xffff987a9bdac9b8L 0x1bdac9b8L
+[-]  2568 pointer 0xffff987a9bdac9c8L 0x1bdac9c8L
+[-]  2576 pointer 0xffff987a9bdac9c8L 0x1bdac9c8L
+[-]  2584 pointer 0
+[-]  2592 pointer 0xffff987a9edba240L 0x1edba240L
+[-]  2600 pointer 0xffff987a9edba240L 0x1edba240L
+[-]  2608 string:  0x646d6574737973 systemd
+[-]  2616 pointer 0
+[-]  2624 pointer 0
+[-]  2632 pointer 0xffff987a9f0b71a0L 0x1f0b71a0L
+[-]  2640 pointer 0xffff987a9bdaca10L 0x1bdaca10L
+[-]  2648 pointer 0xffff987a9bdaca10L 0x1bdaca10L
+[-]  2656 pointer 0
+[-]  2664 pointer 0xffffffffaccb5d00L 0x38b5d00L
+[-]  2672 pointer 0xffff987a9bdb0b00L 0x1bdb0b00L
+[-]  2680 pointer 0xffffffffacc57720L 0x3857720L
+[-]  2688 pointer 0xffff987a9bdb6ec0L 0x1bdb6ec0L
+[-]  2696 pointer 0xffff987a9bdbb180L 0x1bdbb180L
+[-]  2704 string:  0x7be3c0fe28014a03 J(���{
+[-]  2712 pointer 0
+[-]  2720 pointer 0
+[-]  2728 pointer 0xffff987a9bdaca68L 0x1bdaca68L
+[-]  2736 pointer 0xffff987a9bdaca68L 0x1bdaca68L
+[-]  2744 pointer 0
+[-]  2752 pointer 0
+[-]  2760 pointer 0
+[-]  2776 pointer 0
+[-]  2784 pointer 0
+[-]  2800 pointer 0
+[-]  2808 pointer 0
+[-]  2816 unsigned long:  0x300000000
+[-]  2824 pointer 0
+[-]  2832 pointer 0
+[-]  2840 pointer 0
+[-]  2848 pointer 0
+[-]  2856 pointer 0
+[-]  2864 pointer 0
+[-]  2872 pointer 0
+[-]  2880 pointer 0
+[-]  2888 pointer 0
+[-]  2896 pointer 0
+[-]  2904 pointer 0xffff987a9eccd068L 0x1eccd068L
+[-]  2912 pointer 0
+[-]  2920 pointer 0
+[-]  2928 unsigned long:  0x5557c
+[-]  2936 unsigned long:  0x696989d
+[-]  2960 unsigned long:  0x7ce000
+[-]  2968 pointer 0
+[-]  2976 pointer 0
+[-]  2984 unsigned long:  0xe71ee77
+[-]  2992 unsigned long:  0x6d8bafec
+[-]  3016 pointer 0
+[-]  3024 pointer 0
+[-]  3032 pointer 0
+[-]  3040 pointer 0
+[-]  3048 pointer 0
+[-]  3056 pointer 0
+[-]  3064 pointer 0
+[-]  3072 pointer 0
+[-]  3080 pointer 0
+[-]  3088 pointer 0
+[-]  3096 pointer 0
+[-]  3104 pointer 0
+[-]  3112 pointer 0
+[-]  3120 pointer 0
+[-]  3128 pointer 0
+[-]  3136 string:  0xffffffff00000002L ����
+[-]  3144 unsigned long:  0xffffffff
+[-]  3152 pointer 0xffff987a9ef50000L 0x1ef50000L
+[-]  3160 pointer 0xffff987a9ef50018L 0x1ef50018L
+[-]  3168 pointer 0xffff987a9ef50018L 0x1ef50018L
+[-]  3176 pointer 0
+[-]  3184 unsigned long:  0x7ff6bd529ba0
+[-]  3192 pointer 0
+[-]  3200 pointer 0xffff987a9bdacc40L 0x1bdacc40L
+[-]  3208 pointer 0xffff987a9bdacc40L 0x1bdacc40L
+[-]  3216 pointer 0
+[-]  3224 pointer 0
+[-]  3232 pointer 0
+[-]  3240 pointer 0
+[-]  3248 pointer 0
+[-]  3256 pointer 0xffff987a9bdacc78L 0x1bdacc78L
+[-]  3264 pointer 0xffff987a9bdacc78L 0x1bdacc78L
+[-]  3272 pointer 0xffff987a9bdacc88L 0x1bdacc88L
+[-]  3280 pointer 0xffff987a9bdacc88L 0x1bdacc88L
+[-]  3288 pointer 0
+[-]  3296 pointer 0
+[-]  3312 unsigned long:  0xffffffff
+[-]  3320 pointer 0
+[-]  3328 pointer 0
+[-]  3336 pointer 0
+[-]  3344 pointer 0
+[-]  3352 pointer 0xffff987a9bdaccd8L 0x1bdaccd8L
+[-]  3360 pointer 0
+[-]  3368 pointer 0
+[-]  3376 pointer 0
+[-]  3384 pointer 0
+[-]  3392 pointer 0
+[-]  3400 pointer 0
+[-]  3408 pointer 0
+[-]  3416 pointer 0
+[-]  3424 pointer 0
+[-]  3432 pointer 0
+[-]  3440 pointer 0
+[-]  3448 pointer 0
+[-]  3456 pointer 0
+[-]  3464 pointer 0
+[-]  3472 pointer 0
+[-]  3480 pointer 0
+[-]  3488 pointer 0
+[-]  3496 pointer 0
+[-]  3504 pointer 0
+[-]  3512 pointer 0
+[-]  3520 pointer 0
+[-]  3528 pointer 0
+[-]  3536 pointer 0
+[-]  3544 pointer 0
+[-]  3552 pointer 0
+[-]  3560 pointer 0
+[-]  3568 pointer 0
+[-]  3576 pointer 0
+[-]  3584 pointer 0
+[-]  3592 pointer 0
+[-]  3600 pointer 0
+[-]  3608 pointer 0
+[-]  3616 pointer 0
+[-]  3624 pointer 0
+[-]  3632 pointer 0
+[-]  3640 pointer 0
+[-]  3648 pointer 0
+[-]  3656 pointer 0
+[-]  3664 pointer 0
+[-]  3672 pointer 0
+[-]  3680 pointer 0
+[-]  3688 pointer 0
+[-]  3696 pointer 0
+[-]  3704 pointer 0
+[-]  3712 pointer 0
+[-]  3720 pointer 0
+[-]  3728 pointer 0
+[-]  3736 pointer 0
+[-]  3744 pointer 0
+[-]  3752 pointer 0
+[-]  3760 pointer 0
+[-]  3768 pointer 0
+[-]  3776 pointer 0
+[-]  3784 pointer 0
+[-]  3792 pointer 0
+[-]  3800 pointer 0
+[-]  3808 pointer 0
+[-]  3816 pointer 0
+[-]  3824 pointer 0
+[-]  3832 pointer 0
+[-]  3840 pointer 0
+[-]  3848 pointer 0
+[-]  3856 pointer 0
+[-]  3864 pointer 0
+[-]  3872 pointer 0
+[-]  3880 pointer 0
+[-]  3888 pointer 0
+[-]  3896 pointer 0
+[-]  3904 pointer 0
+[-]  3912 pointer 0
+[-]  3920 pointer 0
+[-]  3928 pointer 0
+[-]  3936 pointer 0
+[-]  3944 pointer 0
+[-]  3952 pointer 0
+[-]  3960 pointer 0
+[-]  3968 pointer 0
+[-]  3976 pointer 0
+[-]  3984 pointer 0
+[-]  3992 pointer 0
+[-]  4000 pointer 0
+[-]  4008 pointer 0
+[-]  4016 pointer 0
+[-]  4024 pointer 0
+[-]  4032 pointer 0
+[-]  4040 pointer 0
+[-]  4048 pointer 0
+[-]  4056 pointer 0
+[-]  4064 pointer 0
+[-]  4072 pointer 0
+[-]  4080 pointer 0
+[-]  4088 pointer 0

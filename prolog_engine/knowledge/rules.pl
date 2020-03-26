@@ -1,8 +1,11 @@
 % use_module(library(clpfd)).
 :- style_check(-singleton).
 
-isTrue([E|ES]) :- 
-    E == 49.
+isTrue([X, Y]):-
+    X == 49.
+
+isTrue([X|Tail]):-
+    isTrue(Tail).
 
 possible_task_struct(Base_addr) :- 
     /* void *stack */
@@ -62,6 +65,7 @@ possible_mm_struct(Base_addr) :-
     /* five pointers */
     ispointer(Base_addr, Offset1, Value1),
     Offset1 = 0,
+    check_vm_area_struct(Value1),
     ispointer(Base_addr, Offset2, Value2),
     Offset2 is Offset1 + 8,
     /* comment this because it does not hold for new kernel*/
@@ -110,7 +114,15 @@ possible_mm_struct(Base_addr) :-
     ENV_start_offset is ARG_end_offset + 8,
     islong(Base_addr, ENV_end_offset, ENV_end_value),
     ENV_end_offset is ENV_start_offset + 8,
-    ENV_end_value > ENV_start_value.
+    ENV_end_value > ENV_start_value,
+
+    log('profile.txt', 'mm_struct', Base_addr),
+    log('profile.txt', 'mmap', Offset1),
+    log('profile.txt', 'arg_start', ARG_start_offset),
+    log('profile.txt', 'start_brk', Offset10),
+    log('profile.txt', 'brk', Offset11),
+    log('profile.txt', 'start_stack', Offset12),
+    log('profile.txt', "mm_struct_end", Base_addr).
 
 possible_sched_info(Base_addr) :- 
     islong(Base_addr, Offset1, Value1),
@@ -124,6 +136,7 @@ possible_list_head(Base_addr, Comm_offset, Tasks_offset) :-
     ispointer(Base_addr, Offset2, Value2),
     Offset2 is Offset1 + 8,
     /* create process to reason about whether Value1 points to another task struct */
+    not(Value1 is Base_addr),
     process_create(path('python'),
                     ['subquery.py', Value1, "list_head_ts", Comm_offset, Tasks_offset],
                     [stdout(pipe(In))]),
@@ -132,6 +145,21 @@ possible_list_head(Base_addr, Comm_offset, Tasks_offset) :-
     close(In),
     isTrue(Result).
     /*list_head_next(Value1, Offset1),*/
+
+possible_list_head_tg(Base_addr, Comm_offset, Tasks_offset) :- 
+    /* print_nl('find list_head', ''), */
+    ispointer(Base_addr, Offset1, Value1),
+    Offset1 is 0,
+    ispointer(Base_addr, Offset2, Value2),
+    Offset2 is Offset1 + 8,
+    /* create process to reason about whether Value1 points to another task struct */
+    process_create(path('python'),
+                    ['subquery.py', Value1, "list_head_ts", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
 
 list_head_next(Base_addr, List_head_offset, Comm_offset) :- 
     /* the knowledge base does not have task struct that contains value1 */
@@ -171,10 +199,131 @@ possible_ts(Base_addr, Comm_offset, Tasks_offset):-
     close(In),
     isTrue(Result).
 
+possible_group_leader(Base_addr, Comm_offset, Tasks_offset):-
+    isstring(Base_addr, Comm_offset, Comm_value),
+    ispointer(Base_addr, Tasks_offset, Tasks_value),
+    process_create(path('python'),
+                    ['subquery.py', Tasks_value, "list_head_gl", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+possible_thread_group(Base_addr, Comm_offset, Tasks_offset):-
+     /* print_nl('find list_head', ''), */
+    ispointer(Base_addr, Offset1, Value1),
+    Offset1 is 0,
+    ispointer(Base_addr, Offset2, Value2),
+    Offset2 is Offset1 + 8,
+    /* create process to reason about whether Value1 points to another task struct */
+    process_create(path('python'),
+                    ['subquery.py', Value1, "list_head_ts", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+possible_cred(Base_addr):-
+    isint(Base_addr, Offset1, Value1),
+    Offset1 < 25,
+    isint(Base_addr, Offset2, Value2),
+    Offset2 is Offset1 + 4,
+    isint(Base_addr, Offset3, Value3),
+    Offset3 is Offset2 + 4,
+    isint(Base_addr, Offset4, Value4),
+    Offset4 is Offset3 + 4,
+    isint(Base_addr, Offset5, Value5),
+    Offset5 is Offset4 + 4,
+    isint(Base_addr, Offset6, Value6),
+    Offset6 is Offset5 + 4,
+    isint(Base_addr, Offset7, Value7),
+    Offset7 is Offset6 + 4,
+    isint(Base_addr, Offset8, Value8),
+    Offset8 is Offset7 + 4,
+    isint(Base_addr, Offset9, Value9),
+    Offset9 is Offset8 + 4,
+
+    islong(Base_addr, Offset10, Value10),
+    Offset10 > Offset9,
+    Offset10 < Offset9 + 17,
+    islong(Base_addr, Offset11, Value11),
+    Offset11 is Offset10 + 8,
+
+    log('profile.txt', 'cred', Base_addr),
+    log('profile.txt', 'uid', Offset1),
+    log('profile.txt', 'gid', Offset2),
+    log('profile.txt', 'euid', Offset5),
+    log('profile.txt', 'egid', Offset6),
+    log('profile.txt', 'cred_end', Base_addr).
+
+
+possible_vm_area_struct(Base_addr):-
+    islong(Base_addr, VM_start_offset, VM_start_value),
+    VM_start_offset < 20,
+    islong(Base_addr, VM_end_offset, VM_end_value),
+    VM_end_offset is VM_start_offset + 8,
+    ispointer(Base_addr, VM_next_offset, VM_next_value),
+    VM_next_offset is VM_end_offset + 8,
+
+    log('profile.txt', 'vm_area_struct', Base_addr),
+    log('profile.txt', 'vm_start', VM_start_offset),
+    log('profile.txt', 'vm_end', VM_end_offset),
+    log('profile.txt', 'vm_next', VM_next_offset),
+    log('profile.txt', 'vm_area_struct_end', Base_addr).
+
+
+    /* leave this recursive query for now */
+    /* check_vm_area_struct(VM_next_value),*/
+
+/*    ispointer(Base_addr, VM_mm_offset, VM_mm_value),
+    VM_mm_offset > VM_next_offset,
+
+
+    islong(Base_addr, VM_flag_offset, VM_flag_value),
+    VM_flag_offset > VM_mm_offset,
+    VM_flag_offset < 200,*/
+
+    /*ispointer(Base_addr, Anon_vma_offset, Anon_vma_value),
+    Anon_vma_offset > VM_flag_offset,
+    ispointer(Base_addr, VM_ops_offset, VM_ops_value),
+    VM_ops_offset is Anon_vma_offset + 8,*/
+
+/*    isint(Base_addr, VM_pgoff_offset1, VM_pgoff_value1),
+    VM_pgoff_offset1 > VM_flag_offset,
+    isint(Base_addr, VM_pgoff_offset2, VM_pgoff_value2),
+    VM_pgoff_offset2 is VM_pgoff_offset1 + 4,*/
+
+    /*islong(Base_addr, VM_pgoff_offset1, VM_pgoff_value1),
+    VM_pgoff_offset1 > VM_flag_offset,*/
+
+    /*ispointer(Base_addr, VM_file_offset, VM_file_value),
+    VM_file_offset is VM_pgoff_offset1 + 8,
+    VM_file_offset < 200,*/
+
+
+check_vm_area_struct(Base_addr) :- 
+    process_create(path('python'),
+                    ['subquery.py', Base_addr, "vm_area_struct"],
+                    [stdout(pipe(In))]),
+    print(In),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
 
 possible_list_head_ts(Base_addr, Comm_offset, Tasks_offset) :- 
     New_offset is Comm_offset - Tasks_offset,
     isstring(Base_addr, New_offset, Comm_value).
+
+log(File_name, Name, Offset):-
+    open(File_name, append, Stream),
+    write(Stream, Name),
+    write(Stream, ':'),
+    write(Stream, Offset),
+    nl(Stream),
+    close(Stream).
 
 print_nl(Name, Content) :- 
     print(Name),

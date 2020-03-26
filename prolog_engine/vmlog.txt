@@ -1,0 +1,2 @@
+possible_vm_area_struct(Base). ./knowledge/0.740894473769.pl
+1 1

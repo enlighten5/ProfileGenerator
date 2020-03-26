@@ -5,7 +5,8 @@ from pyswip import *
 
 class PrologQuery(rm.AddressSpace):
     def __init__(self, image_path):
-        rm.AddressSpace.__init__(self, image_path, 0x3809000)
+        #rm.AddressSpace.__init__(self, image_path, 0x3809000)
+        rm.AddressSpace.__init__(self, image_path, 0)
 
     def construct_kb(self, paddr, input_f, output_f):
         with open(output_f, 'w') as kb:
@@ -32,12 +33,14 @@ class PrologQuery(rm.AddressSpace):
         query_cmd = "possible_anything(Base_addr)"
         for s in p.query(query_cmd, catcherrors=False):
             count += 1
-            print(s["Base_addr"])
-        print "count result:", count
+            #print(s["Base_addr"])
+        #print "count result:", count
 
 def main():
     prolog_query = PrologQuery(sys.argv[1])
+    #paddr = prolog_query.vtop(0xffffffffbbc10500)
     prolog_query.start_query(0x3810500)
+    prolog_query.start_query(paddr)
 
 if __name__ == "__main__":
     main()

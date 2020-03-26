@@ -23,25 +23,42 @@ class AddressSpace(linux.AMD64PagedMemory):
         except:
             print "Error mmap\m"
             sys.exit(1)
-
+        self.verbose = 0
         self.offset = offset
         self.mem_path = mem_path
         self.mem.seek(0)
+        
         if "ELF" in self.mem.read(6):
+            #print "ELF headers"
             self.has_elf_header = True
         else:
+            #print "not elf headers"
             self.has_elf_header = False
 
         vdtb_idx = self.mem.find("SYMBOL(swapper_pg_dir)=") + len("SYMBOL(swapper_pg_dir)=")
-        self.mem.seek(vdtb_idx)
-        dtb_vaddr = "0x" + self.mem.read(16)
-        
+        if vdtb_idx:
+            self.mem.seek(vdtb_idx)
+            dtb_vaddr = "0x" + self.mem.read(16)
+            #print "dtb_vaddr", dtb_vaddr
+        else:
+            dtb_vaddr = 0
+        with open("./dtb", 'r') as fd:
+            g_dtb = fd.readline()
+            #print "--", g_dtb
+            g_dtb = int(g_dtb)
         self.dtb_vaddr = dtb_vaddr
         self.dtb = dtb
         if dtb:
             self.dtb = dtb
+        elif g_dtb:
+            #print "get dtb", g_dtb
+            self.dtb = g_dtb
         else:
             self.find_dtb(0x1000000)
+            # There is another page table when searchingfrom 0x0. but not complete.
+            #self.find_dtb(0x0)
+            with open("./dtb", 'w') as fd:
+                fd.write(str(self.dtb))
 
     def log(self, message):
         print('%s\t%s' %(strftime("%Y-%m-%d %H:%M:%S", gmtime()), message))
@@ -124,6 +141,7 @@ class AddressSpace(linux.AMD64PagedMemory):
                         continue
 
                     if self.page_size_flag(pdpte_value):
+                        #self.log("found dtb " + hex(start_addr+step))
                         if self.maybe_vtop(self.dtb_vaddr, start_addr+step):
                             self.log("found dtb " + hex(start_addr+step))
                             self.dtb = start_addr + step
@@ -150,6 +168,7 @@ class AddressSpace(linux.AMD64PagedMemory):
                             continue
                         prev_pd_entry = entry
                         if self.entry_present(entry) and self.page_size_flag(entry):
+                            #self.log("found dtb " + hex(start_addr+step))
                             if self.maybe_vtop(self.dtb_vaddr, start_addr+step):
                                 self.log("found dtb " + hex(start_addr+step))
                                 self.dtb = start_addr + step
@@ -169,6 +188,7 @@ class AddressSpace(linux.AMD64PagedMemory):
                                 prev_pt_entry = pt_entry
 
                                 if self.entry_present(pt_entry):
+                                    #self.log("found dtb " + hex(start_addr+step))
                                     if self.maybe_vtop(self.dtb_vaddr, start_addr+step):
                                         self.log("found dtb " + hex(start_addr+step))
                                         self.dtb = start_addr + step
@@ -189,7 +209,8 @@ class AddressSpace(linux.AMD64PagedMemory):
             number = value[item]
             phys_addr = self.vtop(number)
             if phys_addr:
-                #print "pointer", hex(number), hex(self.vtop(number)), item*8
+                if self.verbose:
+                    print "[-] ", item*8, hex(paddr+item*8), "pointer", hex(number), hex(self.vtop(number))
                 #if phys_addr - item*8 == paddr:
                 #    continue
                 valid_pointer[item*8] = phys_addr
@@ -200,15 +221,20 @@ class AddressSpace(linux.AMD64PagedMemory):
                     #print "int: ", hex(number), item*8
                     #valid_int[item*8] = number
                     if number == 0x0:
+                        if self.verbose:
+                            print "[-] ", item*8, hex(paddr+item*8), "pointer", number
                         valid_pointer[item*8] = number
+                        #valid_long[item*8] = number
                     pass
                 elif number < 0xffffffffffff:
-                    #print "unsigned long: ", hex(number), item*8
+                    if self.verbose:
+                        print "[-] ", item*8, hex(paddr+item*8), "unsigned long: ", hex(number)
                     valid_long[item*8] = number
                 elif number == 0xffffffffffffffff:
                     pass
                 else:
-                    #print "string: ", hex(number), item*8, content[item*8:item*8+8]
+                    if self.verbose:
+                        print "[-] ", item*8, hex(paddr+item*8), "string: ", hex(number), content[item*8:item*8+8]
                     valid_stirng[item*8] = number
                     
         value = struct.unpack("<1024I", content)
@@ -242,6 +268,24 @@ class AddressSpace(linux.AMD64PagedMemory):
             for key in keys:
                 fact = "isstring(" + hex(paddr) + "," + str(key) + "," + str(valid_stirng[key]) + ")." + "\n"
                 output.write(fact)
+    
+    def pslist(self):
+        init_addr = 0x3810500
+        while True:
+            content = self.read_memory(init_addr + 1928, 8)
+            value = struct.unpack("<Q", content)[0]
+            p_next_task = self.vtop(value)
+            pname = self.read_memory(p_next_task + 680, 8)
+            init_addr = p_next_task - 1928
+            pid = self.read_memory(init_addr + 2184, 4)
+            pid = struct.unpack("<I", pid)[0]
+            print "next process", pname, "at", hex(init_addr), "with pid", pid
+            if init_addr == 0x3810500:
+                break
+
+
+        
+
             
             
         
@@ -293,12 +337,16 @@ def main():
         sys.exit(1)
     mem_path = sys.argv[1]
     #addr_space = AddressSpace(mem_path, 0x3809000)
-    addr_space = AddressSpace(mem_path, 0x11209000)
-    paddr = addr_space.vtop(0xffffffffbbc10500)
-    #paddr = 0x11210500
-    print hex(paddr)
+    #addr_space = AddressSpace(mem_path, 0x11209000)
+    addr_space = AddressSpace(mem_path)
+    
+    paddr = addr_space.vtop(0xffff987a966f4f80)
+    paddr = 0x157d4258
+    #print paddr
     addr_space.extract_info(paddr, "./tmp")
-    print addr_space.read_memory(paddr+2608, 8)
+    #addr_space.pslist()
+    
+    #print addr_space.read_memory(paddr+2608, 8)
     #addr_space.extract_info(376393600, "./tmp")
     #addr_space.extract_info(467322696, "./tmp")
     # 0x1bdab208 this should be where the *next pointer points to. so this is the value in the field *next
