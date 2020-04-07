@@ -80,7 +80,11 @@ possible_mm_struct(Base_addr) :-
     islong(Base_addr, Mmap_base_offset, Mmap_base_value),
     Mmap_base_offset < Offset4 + 17,
     islong(Base_addrm, Task_size_offset, Task_size_value),
-    Task_size_offset < Mmap_base_offset + 16,
+    Task_size_offset < Mmap_base_offset + 33,
+
+    ispointer(Base_addr, Pgd_offset, Pgd_value),
+    Pgd_offset > Task_size_offset,
+    Pgd_offset < Task_size_offset + 17,
 
     /*
         unsigned long start_code, end_code, start_data, end_data;
@@ -106,6 +110,7 @@ possible_mm_struct(Base_addr) :-
     Offset12 is Offset11 + 8,
 
     islong(Base_addr, ARG_start_offset, ARG_start_value),
+    ARG_start_offset < 2000,
     ARG_start_offset is Offset12 + 8,
     islong(Base_addr, ARG_end_offset, ARG_end_value),
     ARG_end_offset is ARG_start_offset + 8,
@@ -118,6 +123,7 @@ possible_mm_struct(Base_addr) :-
 
     log('profile.txt', 'mm_struct', Base_addr),
     log('profile.txt', 'mmap', Offset1),
+    log('profile.txt', 'pgd', Pgd_offset),
     log('profile.txt', 'arg_start', ARG_start_offset),
     log('profile.txt', 'start_brk', Offset10),
     log('profile.txt', 'brk', Offset11),
@@ -162,7 +168,7 @@ possible_list_head_tg(Base_addr, Comm_offset, Tasks_offset) :-
     isTrue(Result).
 
 list_head_next(Base_addr, List_head_offset, Comm_offset) :- 
-    /* the knowledge base does not have task struct that contains value1 */
+    /* the knowled  ge base does not have task struct that contains value1 */
 
     /* get the *next list head pointer in value1 */
     ispointer(Base_addr, Offset1, Value1),

@@ -17,7 +17,7 @@ possible_anything(Base_addr) :-
     /* we need to use sched_info to help locate task */
     ispointer(Base_addr, Sched_info_offset, Sched_info_value),
     Sched_info_offset > Stack_offset,
-    possible_sched_info(Sched_info_value),
+    % possible_sched_info(Sched_info_value),
 
     
     ispointer(Base_addr, MM_offset, MM_pointer),
@@ -65,7 +65,9 @@ possible_anything(Base_addr) :-
 
     ispointer(Base_addr, Thread_group_offset, Thread_group_value),
     Thread_group_offset > Group_leader_offset,
+
     /* This rule is very ad hoc */
+
     Thread_group_offset < Group_leader_offset + 150,
     possible_thread_group(Thread_group_value, Comm_offset, Thread_group_offset),
 
@@ -76,7 +78,6 @@ possible_anything(Base_addr) :-
     Cred_offset2 is Cred_offset1 + 8,
     Cred_offset2 < Comm_offset,
     possible_cred(Cred_value1),
-
 
 
 
@@ -97,10 +98,8 @@ possible_anything(Base_addr) :-
     log('profile.txt', 'thread_group', Thread_group_offset),
     log('profile.txt', 'cred', Cred_offset1),
     log('profile.txt', 'comm', Comm_offset),
-    log('profile.txt', 'end', Time_past).
+    log('profile.txt', 'end', Time_past),
 
-    
-/*
     print_nl('stack', Stack_offset),
     print_nl('Sched_info_offset', Sched_info_offset),
     print_nl('task', Tasks_offset),
@@ -111,7 +110,7 @@ possible_anything(Base_addr) :-
     print_nl('thread_group', Thread_group_offset),
     print_nl('cred', Cred_offset1),
     print_nl('comm', Comm_offset),
-    print('----------------------------'), nl.*/
+    print('----------------------------'), nl.
 
 
 log(File_name, Name, Offset):-

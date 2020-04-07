@@ -276,8 +276,6 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         This code was derived directly from legacyintel.py
         '''
         try:
-            #if addr == 140737341566960:
-            print "read longlong phys", addr
             string = self.base.read(addr, 8)
         except IOError:
             string = None
@@ -414,7 +412,6 @@ class AMD64PagedMemory(paged.AbstractWritablePagedMemory):
         while step < 0x10000:
             # read the full pml4
             pml4 = self.base.read(start_addr+step & 0xffffffffff000, 0x200 * 8)
-            print "read pml4", hex(start_addr+step) 
             if pml4 is None:
                 continue
 

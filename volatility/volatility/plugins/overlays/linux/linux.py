@@ -2407,7 +2407,7 @@ class VolatilityDTB(obj.VolatilityMagic):
  
                 break
         #good_dtb = 0x1010b70
-        print "find good dtb ", hex(good_dtb)
+        print "find good dtb ", hex(good_dtb), hex(swapper_address)
         yield good_dtb
 
 # the intel check, simply checks for the static paging of init_task

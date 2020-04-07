@@ -11,8 +11,9 @@ def main():
     paddr = 0x14775a8
     #extract_info("/home/zhenxiao/images/debian_x64.bin", paddr, 8)
     #extract_info_r("/home/zhenxiao/images/debian_x64.bin", paddr, 2048, "/home/zhenxiao/ProfileGenerator/debian.pl")
-    #parse_dwarf('/home/zhenxiao/ProfileGenerator/volatility/volatility/plugins/overlays/linux/book/module.dwarf')
-    extract_info("/home/zhenxiao/images/lubuntu_x64_ASLR.bin", 0x11210500, 4096)
+    parse_dwarf('/home/zhenxiao/Desktop/module.dwarf')
+    #extract_info("/home/zhenxiao/images/lubuntu_x64_ASLR.bin", 0x11210500, 4096)
+    #parse_profile()
     
 def parse_dwarf(file_path):
     with open(file_path, 'r') as dwarf:
@@ -32,6 +33,27 @@ def parse_dwarf(file_path):
                 offset_idx += len("DW_AT_data_member_location")
                 print "name", line[name_idx: name_end], "offset", line[offset_idx: offset_end]
             line = dwarf.readline()
+
+
+def parse_profile():
+    profile = {}
+    with open('profile.txt', 'r') as p:
+        line = p.readline()
+        while line:            
+            line = line.strip('\n')
+            content = line.split(':')
+            if content[0] in profile.keys():
+                #print content[0], "in profile"
+                if not content[1] in profile[content[0]]:
+                    profile[content[0]].append(content[1])
+            else:
+                #print content[0], "not in profile"
+                profile.update({content[0] : [content[1]]})
+            line = p.readline()
+
+        keys = profile.keys()
+        for key in keys:
+            print key, profile[key]
 
 def is_user_pointer(buf, idx):
     dest = (ord(buf[idx+7]) << 56) + (ord(buf[idx+6]) << 48) + (ord(buf[idx+5]) << 40) + (ord(buf[idx+4]) << 32) + (ord(buf[idx+3]) << 24) + (ord(buf[idx+2]) << 16) + (ord(buf[idx+1]) << 8) + ord(buf[idx])

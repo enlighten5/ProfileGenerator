@@ -39,8 +39,29 @@ class PrologQuery(rm.AddressSpace):
 def main():
     prolog_query = PrologQuery(sys.argv[1])
     #paddr = prolog_query.vtop(0xffffffffbbc10500)
-    prolog_query.start_query(0x3810500)
-    prolog_query.start_query(paddr)
+    # Ubuntu_x64
+    #prolog_query.start_query(0x3810500)
+    # Linux-sample
+    #prolog_query.start_query(0x160d020)
+    # Debian
+    #prolog_query.start_query(0x14871f0)
+    # lubuntu_x64_ASLR
+    #prolog_query.start_query(0x11210500)
+    # 4.11
+    #prolog_query.start_query(0x13e104c0)
+    # 4.12
+    #prolog_query.start_query(0x1a4104c0)
+    # 4.13_2
+    prolog_query.start_query(0x16210480)
+    # 4.14_2
+    #prolog_query.start_query(0x7610480)
+    # 4.18_2
+    #prolog_query.start_query(0x5c12740)
+
+
+    
+
+    #prolog_query.start_query(paddr)
 
 if __name__ == "__main__":
     main()

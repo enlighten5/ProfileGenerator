@@ -11,7 +11,12 @@ Never print in this file, the stdout is directed to prolog
 """
 class SubQuery(pq.PrologQuery):
     def __init__(self):
-        pq.PrologQuery.__init__(self, "/home/zhenxiao/images/lubuntu_x64.bin")
+        #pq.PrologQuery.__init__(self, "/home/zhenxiao/images/lubuntu_x64.bin")
+        #pq.PrologQuery.__init__(self, "/home/zhenxiao/images/linux-sample-1.bin")
+        #pq.PrologQuery.__init__(self, "/home/zhenxiao/images/debian_x64.bin")
+        #pq.PrologQuery.__init__(self, "/home/zhenxiao/images/lubuntu_x64_ASLR.bin")
+        pq.PrologQuery.__init__(self, "/home/zhenxiao/images/4.13_2.bin")
+
 
     def subquery(self, base_addr, query_rule, comm_offset = None, task_offset = None):
         tmp_name = "./knowledge/" + str(random.random()) + ".pl"
