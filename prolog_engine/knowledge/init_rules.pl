@@ -88,11 +88,72 @@ possible_anything(Base_addr) :-
     get_time(End),
     Time_past is End - Current,
     log('profile.txt', 'new answer', Current),
-    log('profile.txt', 'stack', Stack_offset),
-    log('profile.txt', 'Sched_info_offset', Sched_info_offset),
+    /*log('profile.txt', 'stack', Stack_offset),
+    log('profile.txt', 'Sched_info_offset', Sched_info_offset),*/
     log('profile.txt', 'task', Tasks_offset),
     log('profile.txt', 'mm_struct', MM_offset2),
     log('profile.txt', 'pid', Pid_offset),
+    log('profile.txt', 'parent', Parent_offset),
+    log('profile.txt', 'group_leader', Group_leader_offset),
+    log('profile.txt', 'thread_group', Thread_group_offset),
+    log('profile.txt', 'cred', Cred_offset1),
+    log('profile.txt', 'comm', Comm_offset),
+    log('profile.txt', 'end', Time_past),
+
+    /*print_nl('stack', Stack_offset),
+    print_nl('Sched_info_offset', Sched_info_offset),*/
+    print_nl('task', Tasks_offset),
+    print_nl('mm_struct', MM_offset2),
+    print_nl('pid', Pid_offset),
+    print_nl('parent', Parent_offset),
+    print_nl('group_leader', Group_leader_offset),
+    print_nl('thread_group', Thread_group_offset),
+    print_nl('cred', Cred_offset1),
+    print_nl('comm', Comm_offset),
+    print('----------------------------'), nl.
+
+possible_anything_no_order(Base_addr) :- 
+    get_time(Current),
+
+    % ispointer(Base_addr, MM_offset2, MM_pointer2),
+    % possible_mm_struct(MM_pointer2),
+
+    ispointer(Base_addr, Tasks_offset, Task_value),
+
+
+    /*ispointer(Base_addr, Parent_offset, Parent_value),
+
+    ispointer(Base_addr, Parent_offset2, Parent_value2),
+
+    ispointer(Base_addr, Child_offset, Child_value),*/
+
+    /* task_struct *group_leader */
+
+    ispointer(Base_addr, Group_leader_offset, Group_leader_value),
+
+    isstring(Base_addr, Comm_offset, Comm_value),
+
+    possible_list_head_no_order(Task_value, Comm_offset, Tasks_offset),
+
+/*
+    possible_ts_no_order(Parent_value, Comm_offset, Tasks_offset),
+    possible_list_head_no_order(Task_value, Comm_offset, Tasks_offset),
+    possible_ts_no_order(Parent_value2, Comm_offset, Tasks_offset),
+    possible_ts_no_order(Group_leader_value, Comm_offset, Tasks_offset),
+
+    ispointer(Base_addr, Thread_group_offset, Thread_group_value),
+
+    possible_thread_group_no_order(Thread_group_value, Comm_offset, Thread_group_offset),
+*/
+    % ispointer(Base_addr, Cred_offset1, Cred_value1),
+    % possible_cred(Cred_value1),
+
+ 
+    get_time(End),
+    Time_past is End - Current,
+    log('profile.txt', 'new answer', Current),
+    log('profile.txt', 'task', Tasks_offset),
+    log('profile.txt', 'mm_struct', MM_offset2),
     log('profile.txt', 'parent', Parent_offset),
     log('profile.txt', 'group_leader', Group_leader_offset),
     log('profile.txt', 'thread_group', Thread_group_offset),
@@ -111,7 +172,6 @@ possible_anything(Base_addr) :-
     print_nl('cred', Cred_offset1),
     print_nl('comm', Comm_offset),
     print('----------------------------'), nl.
-
 
 log(File_name, Name, Offset):-
     open(File_name, append, Stream),
@@ -220,6 +280,14 @@ possible_list_head(Base_addr, Comm_offset, Tasks_offset) :-
     close(In),
     isTrue(Result).
 
+possible_list_head_no_order(Base_addr, Comm_offset, Tasks_offset) :- 
+    process_create(path('python'),
+                    ['subquery.py', Base_addr, "list_head_no_order", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
 
 task_struct_r(Base_addr):-
     process_create(path('python'),
@@ -262,6 +330,15 @@ possible_ts(Base_addr, Comm_offset, Tasks_offset):-
     close(In),
     isTrue(Result).
 
+possible_ts_no_order(Base_addr, Comm_offset, Tasks_offset):-
+    process_create(path('python'),
+                    ['subquery.py', Base_addr, "ts_no_order", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
 possible_group_leader(Base_addr, Comm_offset, Tasks_offset):-
     process_create(path('python'),
                     ['subquery.py', Base_addr, "group_leader", Comm_offset, Tasks_offset],
@@ -274,6 +351,15 @@ possible_group_leader(Base_addr, Comm_offset, Tasks_offset):-
 possible_thread_group(Base_addr, Comm_offset, Tasks_offset):-
     process_create(path('python'),
                     ['subquery.py', Base_addr, "thread_group", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+possible_thread_group_no_order(Base_addr, Comm_offset, Tasks_offset):-
+    process_create(path('python'),
+                    ['subquery.py', Base_addr, "thread_group_no_order", Comm_offset, Tasks_offset],
                     [stdout(pipe(In))]),
     read_string(In, Len, X),
     string_codes(X, Result),

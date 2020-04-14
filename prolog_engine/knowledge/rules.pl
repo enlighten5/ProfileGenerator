@@ -152,6 +152,22 @@ possible_list_head(Base_addr, Comm_offset, Tasks_offset) :-
     isTrue(Result).
     /*list_head_next(Value1, Offset1),*/
 
+possible_list_head_no_order(Base_addr, Comm_offset, Tasks_offset) :- 
+    /* print_nl('find list_head', ''), */
+    ispointer(Base_addr, Offset1, Value1),
+    Offset1 is 0,
+    /* create process to reason about whether Value1 points to another task struct */
+    not(Value1 is Base_addr),
+    Value2 is Value1 - Tasks_offset,
+    process_create(path('python'),
+                    ['subquery.py', Value2, "list_head_ts2", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+    /*list_head_next(Value1, Offset1),*/
+
 possible_list_head_tg(Base_addr, Comm_offset, Tasks_offset) :- 
     /* print_nl('find list_head', ''), */
     ispointer(Base_addr, Offset1, Value1),
@@ -205,6 +221,17 @@ possible_ts(Base_addr, Comm_offset, Tasks_offset):-
     close(In),
     isTrue(Result).
 
+possible_ts_no_order(Base_addr, Comm_offset, Tasks_offset):-
+    isstring(Base_addr, Comm_offset, Comm_value),
+    ispointer(Base_addr, Tasks_offset, Tasks_value),
+    process_create(path('python'),
+                    ['subquery.py', Tasks_value, "list_head_no_order", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
 possible_group_leader(Base_addr, Comm_offset, Tasks_offset):-
     isstring(Base_addr, Comm_offset, Comm_value),
     ispointer(Base_addr, Tasks_offset, Tasks_value),
@@ -230,6 +257,21 @@ possible_thread_group(Base_addr, Comm_offset, Tasks_offset):-
     string_codes(X, Result),
     close(In),
     isTrue(Result).
+
+possible_thread_group_no_order(Base_addr, Comm_offset, Tasks_offset):-
+     /* print_nl('find list_head', ''), */
+    ispointer(Base_addr, Offset1, Value1),
+    Offset1 is 0,
+    Value2 is Value1 - Tasks_offset,
+    /* create process to reason about whether Value1 points to another task struct */
+    process_create(path('python'),
+                    ['subquery.py', Value2, "list_head_ts2", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
 
 possible_cred(Base_addr):-
     isint(Base_addr, Offset1, Value1),
@@ -322,6 +364,10 @@ check_vm_area_struct(Base_addr) :-
 possible_list_head_ts(Base_addr, Comm_offset, Tasks_offset) :- 
     New_offset is Comm_offset - Tasks_offset,
     isstring(Base_addr, New_offset, Comm_value).
+
+possible_list_head_ts2(Base_addr, Comm_offset, Tasks_offset) :- 
+    isstring(Base_addr, Comm_offset, Comm_value),
+    not(Comm_value is 3418906600723806067).
 
 log(File_name, Name, Offset):-
     open(File_name, append, Stream),

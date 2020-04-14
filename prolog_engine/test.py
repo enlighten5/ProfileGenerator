@@ -14,6 +14,13 @@ def main():
     parse_dwarf('/home/zhenxiao/Desktop/module.dwarf')
     #extract_info("/home/zhenxiao/images/lubuntu_x64_ASLR.bin", 0x11210500, 4096)
     #parse_profile()
+    s = "swapper/"
+    if all( ord(c) > 46 and ord(c) < 122 for c in s):
+        print "test"
+    else:
+        print "fail"
+    for x in s:
+        print ord(x)
     
 def parse_dwarf(file_path):
     with open(file_path, 'r') as dwarf:

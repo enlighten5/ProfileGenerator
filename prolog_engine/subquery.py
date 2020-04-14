@@ -11,11 +11,13 @@ Never print in this file, the stdout is directed to prolog
 """
 class SubQuery(pq.PrologQuery):
     def __init__(self):
-        #pq.PrologQuery.__init__(self, "/home/zhenxiao/images/lubuntu_x64.bin")
-        #pq.PrologQuery.__init__(self, "/home/zhenxiao/images/linux-sample-1.bin")
-        #pq.PrologQuery.__init__(self, "/home/zhenxiao/images/debian_x64.bin")
-        #pq.PrologQuery.__init__(self, "/home/zhenxiao/images/lubuntu_x64_ASLR.bin")
-        pq.PrologQuery.__init__(self, "/home/zhenxiao/images/4.13_2.bin")
+        # TODO: inherit prologquery without provides image path as a parameter
+        # Replace the parameter with the path to memory dump
+        mem_dump = "/home/zhenxiao/images/4.11.bin"
+        if not os.path.exists(mem_dump):
+            print "[-] Error: replace the mem_dump with the path to the memory dump in subquery.py"
+            exit(1)
+        pq.PrologQuery.__init__(self, mem_dump)
 
 
     def subquery(self, base_addr, query_rule, comm_offset = None, task_offset = None):

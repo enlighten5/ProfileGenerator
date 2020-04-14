@@ -30,9 +30,9 @@ class AddressSpace(linux.AMD64PagedMemory):
         try:
             self.mem = mmap.mmap(f, 0, mmap.MAP_PRIVATE, mmap.PROT_READ)
         except:
-            print "Error mmap\m"
+            print "Error mmap\n"
             sys.exit(1)
-        self.verbose = 1
+        self.verbose = 0
         self.offset = offset2
         self.mem_path = mem_path
         self.mem.seek(0)
@@ -51,10 +51,19 @@ class AddressSpace(linux.AMD64PagedMemory):
             #print "dtb_vaddr", dtb_vaddr
         else:
             dtb_vaddr = 0
-        with open("./dtb", 'r') as fd:
-            g_dtb = fd.readline()
-            #print "--", g_dtb
-            g_dtb = int(g_dtb)
+
+        image_name = os.path.basename(mem_path)
+        store_dtb = "./" + image_name + "_dtb"
+        try: 
+            with open(store_dtb, 'r') as fd:
+                g_dtb = fd.readline()
+                #print "--", g_dtb
+                if g_dtb:
+                    g_dtb = int(g_dtb)
+                else:
+                    g_dtb = None
+        except IOError:
+            g_dtb = None
         self.dtb_vaddr = dtb_vaddr
         self.dtb = dtb
         if dtb:
@@ -67,8 +76,27 @@ class AddressSpace(linux.AMD64PagedMemory):
             self.find_dtb(0x1000000)
             # There is another page table when searchingfrom 0x0. but not complete.
             #self.find_dtb(0x0)
-            with open("./dtb", 'w') as fd:
+            with open(store_dtb, 'w') as fd:
                 fd.write(str(self.dtb))
+
+    def parse_system_map(self, path):
+        with open(path, 'r') as system_map:
+            sysmap = system_map.read()
+            init_task_idx = sysmap.find(" init_task")
+            init_task_from_system_map = "0x" + sysmap[init_task_idx-18:init_task_idx-2]
+
+            init_top_pgt_idx = sysmap.find(" init_top_pgt")
+            if init_top_pgt_idx < 0:
+                init_top_pgt_idx = sysmap.find(" init_level4_pgt")
+            if init_top_pgt_idx < 0:
+                print "[-] Error: cannot find init_pgt form System.map"
+            init_top_pgt_from_system_map = "0x" + sysmap[init_top_pgt_idx-18:init_top_pgt_idx-2]
+
+        self.init_task_from_system_map = init_task_from_system_map
+        self.init_top_pgt_from_system_map = init_top_pgt_from_system_map
+        
+        #print "[-] init_task_from_system_map: {}, init_top_pgt_from_system_map: {}".format(init_task_from_system_map, init_top_pgt_from_system_map)
+
 
     def log(self, message):
         print('%s\t%s' %(strftime("%Y-%m-%d %H:%M:%S", gmtime()), message))
@@ -247,8 +275,16 @@ class AddressSpace(linux.AMD64PagedMemory):
                     pass
                 else:
                     if self.verbose:
-                        print "[-] ", item*8, hex(paddr+item*8), "string: ", hex(number), content[item*8:item*8+8]
-                    valid_stirng[item*8] = number
+                        print "[-] offset", item*8, hex(paddr+item*8), "string: ", hex(number), content[item*8:item*8+8]
+                    
+                    # add for test randstruct
+                    str_content = content[item*8:(item+1)*8]
+                    if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
+                        if len(str_content.strip('\x00')) > 4:
+                            #print "[--] ", str_content
+                            valid_stirng[item*8] = number
+
+
                     
         value = struct.unpack("<1024I", content)
         for idx in range(len(value)):
@@ -281,11 +317,7 @@ class AddressSpace(linux.AMD64PagedMemory):
             for key in keys:
                 fact = "isstring(" + hex(paddr) + "," + str(key) + "," + str(valid_stirng[key]) + ")." + "\n"
                 output.write(fact)
-        possible_paddr = []
-        for p in valid_pointer.keys():
-            if valid_pointer[p] == 0:
-                continue
-            possible_paddr.append(valid_pointer[p])
+        
         return valid_pointer
 
     
@@ -311,41 +343,93 @@ class AddressSpace(linux.AMD64PagedMemory):
         # start from init_task
         paddr = self.vtop(0xffffffffac413740)
         valid_paddr = self.extract_info(paddr, "./tmp")
-        for p in valid_paddr.keys():
+        keys = valid_paddr.keys()
+        keys.sort()
+        for p in keys:
             if valid_paddr[p] == 0:
                 continue
             possible_comm = self.read_memory(valid_paddr[p] + 368, 8)
             content = struct.unpack("<Q", possible_comm)
-            if content[0] < struct.unpack("<Q", "zzzzzzzz")[0]:
-                if content[0] > 0:
+            #str_content = struct.unpack("<8c", possible_comm)
+            str_content = possible_comm
+            if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
+                if len(possible_comm.strip('\x00')) > 4:
                     print "[-] task_struct at offset", p, "address", hex(valid_paddr[p]), "comm\t", possible_comm
+            
+            #if content[0] < struct.unpack("<Q", "zzzzzzzz")[0]:
+            #    if content[0] > 0:
+            #        print "[---] task_struct at offset", p, "address", hex(valid_paddr[p]), "comm\t", possible_comm
+
+            
             possible_comm = self.read_memory(valid_paddr[p] + 368-p, 8)
             content = struct.unpack("<Q", possible_comm)
-            if content[0] < struct.unpack("<Q", "zzzzzzzz")[0]:
-                if content[0] > 0:
+            str_content = struct.unpack("<8c", possible_comm)
+            if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
+                if len(possible_comm.strip('\x00')) > 4:
+                    pass
                     print "[-] list_head at", p, "pointer", hex(valid_paddr[p]), "comm\t", possible_comm
             if "systemd" in possible_comm:
                 systemd_init = valid_paddr[p] - p
-                print "[--] init_addr for systemd:", hex(valid_paddr[p] - p)
+                print "[--] init_addr for systemd:", hex(valid_paddr[p] - p), str_content
 
+        print "[--------------------------------------------------]"
         valid_paddr = self.extract_info(systemd_init, "./tmp")
-        for p in valid_paddr.keys():
+        keys = valid_paddr.keys()
+        keys.sort()
+        for p in keys:
             if valid_paddr[p] == 0:
                 continue
             possible_comm = self.read_memory(valid_paddr[p] + 368, 8)
             content = struct.unpack("<Q", possible_comm)
-            if content[0] < struct.unpack("<Q", "zzzzzzzz")[0]:
-                if content[0] > 0:
+            str_content = struct.unpack("<8c", possible_comm)
+            if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
+                if len(possible_comm.strip('\x00')) > 4:
                     print "[-] task_struct at offset", p, "address", hex(valid_paddr[p]), "comm\t", possible_comm
+                    
+
+            #if content[0] < struct.unpack("<Q", "zzzzzzzz")[0]:
+            #    if content[0] > 0:
+            #        print "[---] task_struct at offset", p, "address", hex(valid_paddr[p]), "comm\t", possible_comm
+            #        print "[---] ", str_content
             possible_comm = self.read_memory(valid_paddr[p] + 368-p, 8)
             content = struct.unpack("<Q", possible_comm)
-            if content[0] < struct.unpack("<Q", "zzzzzzzz")[0]:
-                if content[0] > 0:
-                    print "[-] possible task pointer at", p, "pointer", valid_paddr[p], "value", possible_comm
-                    print content
+            str_content = struct.unpack("<8c", possible_comm)
+            if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
+                if len(possible_comm.strip('\x00')) > 4:
+                    print "[-] list_head at", p, "pointer", hex(valid_paddr[p]), "comm\t", possible_comm
 
-            if "systemd" in possible_comm:
-                systemd_init = valid_paddr[p] - p
+            if "kthreadd" in possible_comm:
+                kthreadd_init = valid_paddr[p] - p
+                #print "[--] init_addr for systemd:", hex(valid_paddr[p] - p)
+
+        print "[--------------------------------------------------]"
+        valid_paddr = self.extract_info(kthreadd_init, "./tmp")
+        keys = valid_paddr.keys()
+        keys.sort()
+        for p in keys:
+            if valid_paddr[p] == 0:
+                continue
+            possible_comm = self.read_memory(valid_paddr[p] + 368, 8)
+            content = struct.unpack("<Q", possible_comm)
+            str_content = struct.unpack("<8c", possible_comm)
+            if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
+                if len(possible_comm.strip('\x00')) > 4:
+                    print "[-] task_struct at offset", p, "address", hex(valid_paddr[p]), "comm\t", possible_comm
+                    
+
+            #if content[0] < struct.unpack("<Q", "zzzzzzzz")[0]:
+            #    if content[0] > 0:
+            #        print "[---] task_struct at offset", p, "address", hex(valid_paddr[p]), "comm\t", possible_comm
+            #        print "[---] ", str_content
+            possible_comm = self.read_memory(valid_paddr[p] + 368-p, 8)
+            content = struct.unpack("<Q", possible_comm)
+            str_content = struct.unpack("<8c", possible_comm)
+            if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
+                if len(possible_comm.strip('\x00')) > 4:
+                    print "[-] list_head at", p, "pointer", hex(valid_paddr[p]), "comm\t", possible_comm
+
+            if "kthreadd" in possible_comm:
+                kthreadd_init = valid_paddr[p] - p
                 #print "[--] init_addr for systemd:", hex(valid_paddr[p] - p)
 
 
@@ -409,12 +493,13 @@ def main():
     #addr_space = AddressSpace(mem_path, 0x11209000)
     addr_space = AddressSpace(mem_path)
     
-    paddr = addr_space.vtop(0xffffffffac413740)
+    #paddr = addr_space.vtop(0xffffffffac413740)
     #print paddr
     #paddr = 384804864
     #print paddr
     #addr_space.extract_info(paddr, "./tmp")
-    addr_space.find_comm()
+    #addr_space.find_comm()
+    addr_space.parse_system_map('/home/zhenxiao/ProfileGenerator/volatility/volatility/plugins/overlays/linux/413/boot/System.map-4.13.0-041300-generic')
     #print addr_space.read_memory(paddr+2608, 8)
     #addr_space.extract_info(376393600, "./tmp")
     #addr_space.extract_info(467322696, "./tmp")
