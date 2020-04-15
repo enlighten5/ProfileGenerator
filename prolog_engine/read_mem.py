@@ -249,7 +249,7 @@ class AddressSpace(linux.AMD64PagedMemory):
             if phys_addr:
                 if self.verbose:
                     pass
-                    #print "[-] ", item*8, hex(paddr+item*8), "pointer", hex(number), hex(self.vtop(number))
+                    print "[-] ", item*8, hex(paddr+item*8), "pointer", hex(number), hex(self.vtop(number))
                 #if phys_addr - item*8 == paddr:
                 #    continue
                 valid_pointer[item*8] = phys_addr
@@ -262,14 +262,17 @@ class AddressSpace(linux.AMD64PagedMemory):
                     if number == 0x0:
                         if self.verbose:
                             pass
-                            #print "[-] ", item*8, hex(paddr+item*8), "pointer", number
+                            print "[-] ", item*8, hex(paddr+item*8), "pointer", number
                         valid_pointer[item*8] = number
                         #valid_long[item*8] = number
-                    pass
+                    else:
+                        if self.verbose:
+                            print "[-] ", item*8, hex(paddr+item*8), "value", number
+                        valid_long[item*8] = number
                 elif number < 0xffffffffffff:
                     if self.verbose:
                         pass
-                        #print "[-] ", item*8, hex(paddr+item*8), "unsigned long: ", hex(number)
+                        print "[-] ", item*8, hex(paddr+item*8), "unsigned long: ", hex(number)
                     valid_long[item*8] = number
                 elif number == 0xffffffffffffffff:
                     pass
@@ -281,7 +284,8 @@ class AddressSpace(linux.AMD64PagedMemory):
                     str_content = content[item*8:(item+1)*8]
                     if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
                         if len(str_content.strip('\x00')) > 4:
-                            #print "[--] ", str_content
+                            if self.verbose:
+                                print "[--] ", str_content
                             valid_stirng[item*8] = number
 
 
@@ -432,18 +436,6 @@ class AddressSpace(linux.AMD64PagedMemory):
                 kthreadd_init = valid_paddr[p] - p
                 #print "[--] init_addr for systemd:", hex(valid_paddr[p] - p)
 
-
-
-
-
-
-        
-
-            
-            
-        
-
-    
 def test():
     try:
         f = os.open(sys.argv[1], os.O_RDONLY)
@@ -497,9 +489,9 @@ def main():
     #print paddr
     #paddr = 384804864
     #print paddr
-    #addr_space.extract_info(paddr, "./tmp")
+    addr_space.extract_info(paddr, "./tmp")
     #addr_space.find_comm()
-    addr_space.parse_system_map('/home/zhenxiao/ProfileGenerator/volatility/volatility/plugins/overlays/linux/413/boot/System.map-4.13.0-041300-generic')
+    #addr_space.parse_system_map('/home/zhenxiao/ProfileGenerator/volatility/volatility/plugins/overlays/linux/413/boot/System.map-4.13.0-041300-generic')
     #print addr_space.read_memory(paddr+2608, 8)
     #addr_space.extract_info(376393600, "./tmp")
     #addr_space.extract_info(467322696, "./tmp")

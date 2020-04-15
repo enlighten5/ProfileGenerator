@@ -113,7 +113,6 @@ def main():
     #prolog_query.start_query(0x9413740)
 
 if __name__ == "__main__":
-    #main()
-    parse_profile()
+    main()
 
         
