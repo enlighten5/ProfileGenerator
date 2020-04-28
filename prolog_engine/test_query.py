@@ -12,12 +12,11 @@ class PrologQuery(rm.AddressSpace):
         base_addr = paddr & 0xffffffffff000
         with open(output_f, 'w') as kb:
             kb.write("use_module(library(clpfd))." + "\n")
-            kb.write(":- discontiguous(ispointer/2)." + "\n")
-            kb.write(":- discontiguous(unknownpointer/2)." + "\n")
-            kb.write(":- discontiguous(isint/2)." + "\n")
-            kb.write(":- discontiguous(isstring/2)." + "\n")
-            kb.write(":- discontiguous(islong/2)." + "\n")
-            kb.write("pagebase(" + str(base_addr) + ").\n")
+            kb.write(":- discontiguous(ispointer/3)." + "\n")
+            kb.write(":- discontiguous(unknownpointer/3)." + "\n")
+            kb.write(":- discontiguous(isint/3)." + "\n")
+            kb.write(":- discontiguous(isstring/3)." + "\n")
+            kb.write(":- discontiguous(islong/3)." + "\n")
 
         #self.extract_info(paddr, output_f)
         self.extract_info(base_addr, output_f)
@@ -29,18 +28,16 @@ class PrologQuery(rm.AddressSpace):
 
     def start_query(self, paddr):
         self.log("construct kb")
-        self.construct_kb(paddr, "./knowledge/init_rules.pl", "./knowledge/start_query.pl")
+        self.construct_kb(paddr, "./knowledge/init_rules.pl", "./knowledge/test_query.pl")
     
         self.log("start query")
         p = Prolog()
         p.consult("./knowledge/start_query.pl")
         count = 0
-        self.log("finish kb")
-
         #query_cmd = "possible_anything_no_order(Base_addr)"
-        query_cmd = "possible_task_struct(" + str(paddr) + ")" 
-        for s in p.query(query_cmd, catcherrors=False):
-            count += 1
+        query_cmd = "possible_anything(Base_addr)"
+        #for s in p.query(query_cmd, catcherrors=False):
+        #    count += 1
             #print(s["Base_addr"])
         #print "count result:", count
 
@@ -90,34 +87,17 @@ def main():
     #print hex(vaddr_init_task)
 
     paddr = prolog_query.vtop(vaddr_init_task)
-    
+    #page = prolog_query.find_swapper_page()
+    #print "find swapper page", hex(page)
+    #paddr = prolog_query.vtop(0xffffffffc00d8000)
+    #paddr = 0x17527588 - 8
     pid = os.fork()
     if pid > 0:
         # start_query takes a number (dec or hex) as input, not string
         prolog_query.start_query(int(paddr))
     else:
-        generate_result()
+        pass
 
-    # Ubuntu_x64
-    #prolog_query.start_query(0x3810500)
-    # Linux-sample
-    #prolog_query.start_query(0x160d020)
-    # Debian
-    #prolog_query.start_query(0x14871f0)
-    # lubuntu_x64_ASLR
-    #prolog_query.start_query(0x11210500)
-    # 4.11
-    #prolog_query.start_query(0x13e104c0)
-    # 4.12
-    #prolog_query.start_query(0x1a4104c0)
-    # 4.13
-    #prolog_query.start_query(0x16210480)
-    # 4.14_2
-    #prolog_query.start_query(0x7610480)
-    # 4.18_2
-    #prolog_query.start_query(0x5c12740)
-    # 4.20 randstruct
-    #prolog_query.start_query(0x9413740)
 
 if __name__ == "__main__":
     main()

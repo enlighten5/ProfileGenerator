@@ -4,12 +4,13 @@ from pyswip.core import *
 from pyswip import *
 import os
 import prolog_query as pq
+import test_query as tq
 import random
 PWD = os.getenv('HOME') + "/ProfileGenerator/prolog_engine"
 """
 Never print in this file, the stdout is directed to prolog
 """
-class SubQuery(pq.PrologQuery):
+class SubQuery(tq.PrologQuery):
     def __init__(self):
         # TODO: inherit prologquery without provides image path as a parameter
         # Replace the parameter with the path to memory dump
@@ -17,7 +18,7 @@ class SubQuery(pq.PrologQuery):
         if not os.path.exists(mem_dump):
             print "[-] Error: replace the mem_dump with the path to the memory dump in subquery.py"
             exit(1)
-        pq.PrologQuery.__init__(self, mem_dump)
+        tq.PrologQuery.__init__(self, mem_dump)
 
 
     def subquery(self, base_addr, query_rule, comm_offset = None, task_offset = None):
@@ -27,24 +28,17 @@ class SubQuery(pq.PrologQuery):
         if not os.path.exists(tmp_name):
             self.construct_kb(base_addr, "./knowledge/rules.pl", tmp_name)
         p = Prolog()
+        #p.consult("./knowledge/temp_kb.pl")
         p.consult(tmp_name)
         if comm_offset and not task_offset:
-            #query_cmd = "possible_" + query_rule + "(Base, " + str(comm_offset) + ")."
-            query_cmd = "possible_" + query_rule + "(" + str(base_addr) + ", " + str(comm_offset) + ")."
+            query_cmd = "possible_" + query_rule + "(Base, " + str(comm_offset) + ")."
         if comm_offset and task_offset:
-            #query_cmd = "possible_" + query_rule + "(Base, " + str(comm_offset) + ", " + str(task_offset) + ")."
-            query_cmd = "possible_" + query_rule + "(" + str(base_addr) + ", " + str(comm_offset) + ", " + str(task_offset) + ")."
+            query_cmd = "possible_" + query_rule + "(Base, " + str(comm_offset) + ", " + str(task_offset) + ")."
         if not comm_offset and not task_offset:
-            #query_cmd = "possible_" + query_rule + "(Base)."
-            query_cmd = "possible_" + query_rule + "(" + str(base_addr) + ")."
+            query_cmd = "possible_" + query_rule + "(Base)."
         result = []
-        counter = 0
-        for s in p.query(query_cmd, catcherrors=False):
-            #result.append(s["Base"])
-            result.append(s)
-            counter += 1
-            if counter > 5:
-                break
+        #for s in p.query(query_cmd, catcherrors=False):
+        #    result.append(s["Base"])
 
         if len(result) > 0:
             print 1

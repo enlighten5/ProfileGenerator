@@ -61,86 +61,83 @@ possible_task_struct(Base_addr) :-
 
     
 
-possible_mm_struct(Base_addr) :- 
-    /* five pointers */
-    ispointer(Base_addr, Offset1, Value1),
-    Offset1 = 0,
+possible_mm_struct(Current_addr) :- 
+    get_time(Current),
+    ispointer(Addr1, Value1),
+    Addr1 is Current_addr,
+    %FIXME Ad check_vm_area_struct
     check_vm_area_struct(Value1),
-    ispointer(Base_addr, Offset2, Value2),
-    Offset2 is Offset1 + 8,
-    /* comment this because it does not hold for new kernel*/
-    /*ispointer(Base_addr, Offset3, Value3),
-    Offset3 is Offset2 + 8, */
-    ispointer(Base_addr, Offset4, Value4),
-    Offset4 is Offset2 + 16,
-    /* comment this because it does not hold for new kernel*/
-    /*ispointer(Base_addr, Offset5, Value5),
-    Offset5 is Offset4 + 8,*/
+    ispointer(Addr2, Value2),
+    Addr2 is Addr1 + 8,
+    ispointer(Addr3, Value3),
+    Addr3 is Addr2 + 16,
 
-    islong(Base_addr, Mmap_base_offset, Mmap_base_value),
-    Mmap_base_offset < Offset4 + 17,
-    islong(Base_addrm, Task_size_offset, Task_size_value),
-    Task_size_offset < Mmap_base_offset + 33,
+    islong(Mmap_base_addr, Mmap_base_value),
+    Mmap_base_addr > Addr3,
+    Mmap_base_addr < Addr3 + 17,
+    islong(Task_size_addr, Task_size_value),
+    Task_size_addr > Mmap_base_addr,
+    Task_size_addr < Mmap_base_addr + 33,
 
-    ispointer(Base_addr, Pgd_offset, Pgd_value),
-    Pgd_offset > Task_size_offset,
-    Pgd_offset < Task_size_offset + 17,
+    ispointer(Pgd_addr, Pgd_value),
+    Pgd_addr > Task_size_addr,
+    Pgd_addr < Task_size_addr + 17,
 
-    /*
-        unsigned long start_code, end_code, start_data, end_data;
-        unsigned long start_brk, brk, start_stack;
-        unsigned long arg_start, arg_end, env_start, env_end;
     
-    */
-    islong(Base_addr, Offset6, Value6),
-    islong(Base_addr, Offset7, Value7),
-    Offset7 is Offset6 + 8,
+    %    unsigned long start_code, end_code, start_data, end_data;
+    %    unsigned long start_brk, brk, start_stack;
+    %    unsigned long arg_start, arg_end, env_start, env_end;
+
+    islong(Addr4, Value4),
+    Addr4 > Pgd_addr,
+    islong(Addr5, Value5),
+    Addr5 is Addr4 + 8,
+    Value5 > Value4,
+    islong(Addr6, Value6),
+    Addr6 is Addr5 + 8,
+    islong(Addr7, Value7),
+    Addr7 is Addr6 + 8,
     Value7 > Value6,
-    islong(Base_addr, Offset8, Value8),
-    Offset8 is Offset7 + 8,
-    islong(Base_addr, Offset9, Value9),
-    Offset9 is Offset8 + 8,
-    Value9 > Value8,
+    islong(Addr8, Value8),
+    Addr8 is Addr7 + 8,
+    islong(Addr9, Value9),
+    Addr9 is Addr8 + 8,
+    islong(Addr10, Value10),
+    Addr10 is Addr9 + 8,
 
-    islong(Base_addr, Offset10, Value10),
-    Offset10 is Offset9 + 8,
-    islong(Base_addr, Offset11, Value11),
-    Offset11 is Offset10 + 8,
-    islong(Base_addr, Offset12, Value12),
-    Offset12 is Offset11 + 8,
-
-    islong(Base_addr, ARG_start_offset, ARG_start_value),
-    ARG_start_offset < 2000,
-    ARG_start_offset is Offset12 + 8,
-    islong(Base_addr, ARG_end_offset, ARG_end_value),
-    ARG_end_offset is ARG_start_offset + 8,
+    islong(ARG_start_addr, ARG_start_value),
+    ARG_start_addr is Addr10 + 8,
+    ARG_start_value > 0x7fffffff0000,
+    islong(ARG_end_addr, ARG_end_value),
+    ARG_end_addr is ARG_start_addr + 8,
     ARG_end_value > ARG_start_value,
-    islong(Base_addr, ENV_start_offset, ENV_start_value),
-    ENV_start_offset is ARG_end_offset + 8,
-    islong(Base_addr, ENV_end_offset, ENV_end_value),
-    ENV_end_offset is ENV_start_offset + 8,
+    islong(ENV_start_addr, ENV_start_value),
+    ENV_start_addr is ARG_end_addr + 8,
+    ENV_start_value > 0x7fffffff0000,
+    islong(ENV_end_addr, ENV_end_value),
+    ENV_end_addr is ENV_start_addr + 8,
     ENV_end_value > ENV_start_value,
 
-    log('profile.txt', 'mm_struct', Base_addr),
-    log('profile.txt', 'mmap', Offset1),
-    log('profile.txt', 'pgd', Pgd_offset),
-    log('profile.txt', 'arg_start', ARG_start_offset),
-    log('profile.txt', 'start_brk', Offset10),
-    log('profile.txt', 'brk', Offset11),
-    log('profile.txt', 'start_stack', Offset12),
-    log('profile.txt', "mm_struct_end", Base_addr).
+    get_time(End),
+    Time_past is End - Current,
+    log('profile.txt', 'mm_struct_base', Current_addr),
+    log('profile.txt', 'mmap', Addr1),
+    log('profile.txt', 'pgd', Pgd_addr),
+    log('profile.txt', 'arg_start', ARG_start_addr),
+    log('profile.txt', 'start_brk', Addr8),
+    log('profile.txt', 'brk', Addr9),
+    log('profile.txt', 'start_stack', Addr10),
+    log('profile.txt', "mm_struct query time", Time_past).
 
 possible_sched_info(Base_addr) :- 
     islong(Base_addr, Offset1, Value1),
     Offset1 < 10.
 
-
+% base_addr -> list_head
 possible_list_head(Base_addr, Comm_offset, Tasks_offset) :- 
-    /* print_nl('find list_head', ''), */
-    ispointer(Base_addr, Offset1, Value1),
-    Offset1 is 0,
-    ispointer(Base_addr, Offset2, Value2),
-    Offset2 is Offset1 + 8,
+    ispointer(Base_addr, Value1),
+    ispointer(Base_addr2, Value2),
+    Base_addr2 is Base_addr + 8,
     /* create process to reason about whether Value1 points to another task struct */
     not(Value1 is Base_addr),
     process_create(path('python'),
@@ -200,19 +197,104 @@ list_head_next(Base_addr, List_head_offset, Comm_offset) :-
 
 possible_fs_struct(Base_addr) :- 
     /* 3 integers */
-    isint(Base_addr, Offset1, Value1),
-    Offset1 is 0,
-    isint(Base_addr, Offset2, Value2),
-    Offset2 > Offset1,
-    isint(Base_addr, Offset3, Value3),
-    Offset3 < Offset2 + 10.
+    get_time(Current),
+    log("profile.txt", "start", "fs_struct"),
+    isint(Base_addr, Value1),
+    isint(Addr2, Value2),
+    Addr2 > Base_addr,
+    Addr2 < Base_addr + 10,
+    isint(Addr3, Value3),
+    Addr3 > Addr2,
+    Addr3 < Addr2 + 10,
+
+    ispointer(Root_addr, Root_value),
+    Root_addr > Addr3,
+
+    process_create(path('python'),
+                    ['subquery.py', Root_value, "dentry"],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result),
+
+    ispointer(PWD_addr, PWD_value),
+    PWD_addr > Root_addr,
+    PWD_addr is Root_addr + 16,
+
+    process_create(path('python'),
+                    ['subquery.py', PWD_value, "dentry"],
+                    [stdout(pipe(NewIn))]),
+    read_string(NewIn, Len, X),
+    string_codes(X, Result),
+    close(NewIn),
+    isTrue(Result),
+    get_time(End),
+    Time_past is End - Current,
+    log("profile.txt", "fs_struct_base", Base_addr),
+    log("profile.txt", "offset3", Addr3),
+    log("profile.txt", "Root_offset", Root_addr),
+    log("profile.txt", "PWD_offset", PWD_addr),
+    log("profile.txt", "fs_struct query time", Time_past).
+
+possible_dentry(Base_addr) :- 
+    get_time(Current),
+    ispointer(D_parent_addr, D_parent_value),
+    D_parent_addr > Base_addr,
+    isstring(D_iname_addr, D_iname_value),
+    D_iname_addr < Base_addr + 200,
+    D_parent_addr < D_iname_addr,
+    D_iname_offset is D_iname_addr - Base_addr,
+    D_iname_offset > 0,
+    process_create(path('python'),
+                ['subquery.py', D_parent_value, "d_entry", D_iname_offset],
+                [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result),
+
+    ispointer(D_child_addr, D_child_value),
+    D_child_addr > D_parent_addr,
+    D_child_addr < Base_addr + 200,
+
+    D_child_offset is D_child_addr - Base_addr,
+    D_child_base is D_child_value - D_child_offset,
+    %not(D_child_base is Base_addr),
+    D_child_base > 0,
+    process_create(path('python'),
+                ['subquery.py', D_child_base, "d_entry", D_iname_offset],
+                [stdout(pipe(NewIn))]),
+    read_string(NewIn, Len, X),
+    string_codes(X, Result),
+    close(NewIn),
+    isTrue(Result),
+    get_time(End),
+    Time_past is End - Current,
+    log("profile.txt", "dentry_base", Base_addr),
+    log("profile.txt", "d_iname", D_iname_offset),
+    log("profile.txt", "d_parent", D_parent_addr),
+    log("profile.txt", "d_child", D_child_addr),
+    log("profile.txt", "dentry query time", Time_past).
+
+
+possible_d_entry(Base_addr, D_iname_offset) :-
+    D_iname_addr is Base_addr + D_iname_offset,
+    isstring(D_iname_addr, D_iname_value).
+    
+
+possible_module(Base_addr, Name_offset, Init_offset) :- 
+    isstring(Base_addr, Name_offset, Name_value).
+    /*unknownpointer(Base_addr, Init_offset, Init_value).*/
 
 possible_tlbflush_unmap_batch(Base_addr):- 
     ispointer(Base_addr, Offset, Value).
 
 possible_ts(Base_addr, Comm_offset, Tasks_offset):-
-    isstring(Base_addr, Comm_offset, Comm_value),
-    ispointer(Base_addr, Tasks_offset, Tasks_value),
+    Comm_addr is Base_addr + Comm_offset,
+    isstring(Comm_addr, Comm_value),
+    Tasks_addr is Base_addr + Tasks_offset,
+    ispointer(Tasks_addr, Tasks_value),
     process_create(path('python'),
                     ['subquery.py', Tasks_value, "list_head", Comm_offset, Tasks_offset],
                     [stdout(pipe(In))]),
@@ -244,11 +326,10 @@ possible_group_leader(Base_addr, Comm_offset, Tasks_offset):-
     isTrue(Result).
 
 possible_thread_group(Base_addr, Comm_offset, Tasks_offset):-
-     /* print_nl('find list_head', ''), */
-    ispointer(Base_addr, Offset1, Value1),
-    Offset1 is 0,
-    ispointer(Base_addr, Offset2, Value2),
-    Offset2 is Offset1 + 8,
+    ispointer(Base_addr, Value1),
+    ispointer(Base_addr2, Value2),
+    Base_addr2 is Base_addr + 8,
+
     /* create process to reason about whether Value1 points to another task struct */
     process_create(path('python'),
                     ['subquery.py', Value1, "list_head_ts", Comm_offset, Tasks_offset],
@@ -274,52 +355,68 @@ possible_thread_group_no_order(Base_addr, Comm_offset, Tasks_offset):-
 
 
 possible_cred(Base_addr):-
-    isint(Base_addr, Offset1, Value1),
-    Offset1 < 25,
-    isint(Base_addr, Offset2, Value2),
-    Offset2 is Offset1 + 4,
-    isint(Base_addr, Offset3, Value3),
-    Offset3 is Offset2 + 4,
-    isint(Base_addr, Offset4, Value4),
-    Offset4 is Offset3 + 4,
-    isint(Base_addr, Offset5, Value5),
-    Offset5 is Offset4 + 4,
-    isint(Base_addr, Offset6, Value6),
-    Offset6 is Offset5 + 4,
-    isint(Base_addr, Offset7, Value7),
-    Offset7 is Offset6 + 4,
-    isint(Base_addr, Offset8, Value8),
-    Offset8 is Offset7 + 4,
-    isint(Base_addr, Offset9, Value9),
-    Offset9 is Offset8 + 4,
+    isint(Addr1, Value1),
+    Addr1 is Base_addr + 4,
+    isint(Addr2, Value2),
+    Addr2 is Addr1 + 4,
+    isint(Addr3, Value3),
+    Addr3 is Addr2 + 4,
+    isint(Addr4, Value4),
+    Addr4 is Addr3 + 4,
+    isint(Addr5, Value5),
+    Addr5 is Addr4 + 4,
+    isint(Addr6, Value6),
+    Addr6 is Addr5 + 4,
+    isint(Addr7, Value7),
+    Addr7 is Addr6 + 4,
+    isint(Addr8, Value8),
+    Addr8 is Addr7 + 4,
+    isint(Addr9, Value9),
+    Addr9 is Addr8 + 4,
 
-    islong(Base_addr, Offset10, Value10),
-    Offset10 > Offset9,
-    Offset10 < Offset9 + 17,
-    islong(Base_addr, Offset11, Value11),
-    Offset11 is Offset10 + 8,
+    islong(Addr10, Value10),
+    Addr10 > Addr9,
+    Addr10 < Addr9 + 17,
+    islong(Addr11, Value11),
+    Addr11 is Addr10 + 8,
 
     log('profile.txt', 'cred', Base_addr),
-    log('profile.txt', 'uid', Offset1),
-    log('profile.txt', 'gid', Offset2),
-    log('profile.txt', 'euid', Offset5),
-    log('profile.txt', 'egid', Offset6),
+    log('profile.txt', 'uid', Addr1),
+    log('profile.txt', 'gid', Addr2),
+    log('profile.txt', 'euid', Addr5),
+    log('profile.txt', 'egid', Addr6),
     log('profile.txt', 'cred_end', Base_addr).
 
 
 possible_vm_area_struct(Base_addr):-
-    islong(Base_addr, VM_start_offset, VM_start_value),
-    VM_start_offset < 20,
-    islong(Base_addr, VM_end_offset, VM_end_value),
-    VM_end_offset is VM_start_offset + 8,
-    ispointer(Base_addr, VM_next_offset, VM_next_value),
-    VM_next_offset is VM_end_offset + 8,
+    get_time(Current),
+    islong(VM_start_addr, VM_start_value),
+    VM_start_addr > Base_addr - 1,
+    VM_start_addr < Base_addr + 20,
+    islong(VM_end_addr, VM_end_value),
+    VM_end_addr is VM_start_addr + 8,
+    ispointer(VM_next_addr, VM_next_value),
+    VM_next_addr is VM_end_addr + 8,
 
-    log('profile.txt', 'vm_area_struct', Base_addr),
-    log('profile.txt', 'vm_start', VM_start_offset),
-    log('profile.txt', 'vm_end', VM_end_offset),
-    log('profile.txt', 'vm_next', VM_next_offset),
-    log('profile.txt', 'vm_area_struct_end', Base_addr).
+    ispointer(VM_file_addr, VM_file_value),
+    VM_file_addr > VM_next_addr,
+    process_create(path('python'),
+                    ['subquery.py', VM_file_value, "vm_file"],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result),
+    get_time(End),
+    Time_past is End - Current,
+    
+    log('profile.txt', 'vm_area_struct_base', Base_addr),
+    log('profile.txt', 'vm_start', VM_start_addr),
+    log('profile.txt', 'vm_end', VM_end_addr),
+    log('profile.txt', 'vm_next', VM_next_addr),
+    log('profile.txt', 'vm_file', VM_file_addr),
+    log('profile.txt', 'vm_area_struct_end', Base_addr),
+    log('profile.txt', 'vm_area_struct query time', Time_past).
 
 
     /* leave this recursive query for now */
@@ -350,6 +447,17 @@ possible_vm_area_struct(Base_addr):-
     VM_file_offset is VM_pgoff_offset1 + 8,
     VM_file_offset < 200,*/
 
+possible_vm_file(Base_addr) :-
+    ispointer(Dentry_addr, Dentry_value),
+    Dentry_addr > Base_addr,
+    Dentry_addr < Base_addr + 40,
+    process_create(path('python'),
+                    ['subquery.py', Dentry_value, "dentry"],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
 
 check_vm_area_struct(Base_addr) :- 
     process_create(path('python'),
@@ -363,11 +471,14 @@ check_vm_area_struct(Base_addr) :-
 
 possible_list_head_ts(Base_addr, Comm_offset, Tasks_offset) :- 
     New_offset is Comm_offset - Tasks_offset,
-    isstring(Base_addr, New_offset, Comm_value).
+    Comm_addr is Base_addr + New_offset,
+    isstring(Comm_addr, Comm_value).
 
 possible_list_head_ts2(Base_addr, Comm_offset, Tasks_offset) :- 
     isstring(Base_addr, Comm_offset, Comm_value),
     not(Comm_value is 3418906600723806067).
+
+
 
 log(File_name, Name, Offset):-
     open(File_name, append, Stream),

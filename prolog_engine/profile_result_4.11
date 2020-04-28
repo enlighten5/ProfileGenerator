@@ -1,28 +1,30 @@
-comm ['2584']
+comm ['2584']    correct	
 uid ['0', '4', '8', '12']
-parent ['2176']
-vm_end ['8']
+parent ['2176']    correct
+vm_end ['8']    correct
 vm_area_struct ['445031552']
-group_leader ['2224']
-pid ['2156', '2160']
-thread_group ['2232', '2248', '2336', '2352']
-brk ['272']
+group_leader ['2224']    correct
+pid ['2156', '2160']     two answers
+thread_group ['2232', '2248', '2336', '2352']  four answers 2336
+brk ['272']    correct
 euid ['16', '20', '24', '28']
-mm_struct ['390268864', '1992']
+mm_struct ['390268864', '1992']    correct
 mm_struct_end ['390268864']
-vm_start ['0']
-stack ['0']
-new answer ['1585713737.9279358']
+vm_start ['0']    correct
+stack ['0']    wrong cannot figure out
 Sched_info_offset ['8']
 arg_start ['288']
-task ['1904']
-end ['625.5959355831146', '644.8893172740936', '668.1844358444214', '687.4545214176178', '724.5901072025299', '743.8639369010925', '767.1117177009583', '786.3404612541199']
-cred_end ['333808832']
-mmap ['0']
-start_stack ['280']
-vm_area_struct_end ['445031552']
-vm_next ['16']
+task ['1904']   correct
+mmap ['0']    correct
+start_stack ['280']  correct
+vm_next ['16']    correct
 egid ['20', '24', '28', '32']
 gid ['4', '8', '12', '16']
-start_brk ['264']
+start_brk ['264']    correct
+
 cred ['333808832', '2568']
+new answer ['1585713737.9279358']
+cred_end ['333808832']
+vm_area_struct_end ['445031552']
+
+end ['625.5959355831146', '644.8893172740936', '668.1844358444214', '687.4545214176178', '724.5901072025299', '743.8639369010925', '767.1117177009583', '786.3404612541199']

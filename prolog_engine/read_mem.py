@@ -240,7 +240,10 @@ class AddressSpace(linux.AMD64PagedMemory):
         valid_long = {}
         valid_int = {}
         valid_stirng = {}
+        unknown_pointer = {}
         content = self.read_memory(paddr, size)
+        if not content:
+            return -1
         value = struct.unpack("<512Q", content)
         # There may be some potential issues about identifying long and int
         for item in range(len(value)):
@@ -270,6 +273,12 @@ class AddressSpace(linux.AMD64PagedMemory):
                             print "[-] ", item*8, hex(paddr+item*8), "value", number
                         valid_long[item*8] = number
                 elif number < 0xffffffffffff:
+                    str_content = content[item*8:(item+1)*8]
+                    if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
+                        if len(str_content.replace('\x00', '')) > 4:
+                            if self.verbose:
+                                print "[-] ", item*8, hex(paddr+item*8), "string: ", str_content, hex(number)
+                            valid_stirng[item*8] = number
                     if self.verbose:
                         pass
                         print "[-] ", item*8, hex(paddr+item*8), "unsigned long: ", hex(number)
@@ -277,16 +286,18 @@ class AddressSpace(linux.AMD64PagedMemory):
                 elif number == 0xffffffffffffffff:
                     pass
                 else:
-                    if self.verbose:
-                        print "[-] offset", item*8, hex(paddr+item*8), "string: ", hex(number), content[item*8:item*8+8]
-                    
                     # add for test randstruct
                     str_content = content[item*8:(item+1)*8]
                     if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
-                        if len(str_content.strip('\x00')) > 4:
+                        if len(str_content.replace('\x00', '')) > 4:
                             if self.verbose:
-                                print "[--] ", str_content
+                                print "[-] ", item*8, hex(paddr+item*8), "string: ", str_content, hex(number)
                             valid_stirng[item*8] = number
+                    else:
+                        if self.verbose:
+                            print "[-] ", item*8, hex(paddr+item*8), "unknow pointer: ", hex(number), content[item*8:item*8+8]
+                        unknown_pointer[item*8] = number
+
 
 
                     
@@ -304,22 +315,36 @@ class AddressSpace(linux.AMD64PagedMemory):
             keys = valid_pointer.keys()
             keys.sort()
             for key in keys:
-                fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "ispointer(" + hex(paddr + key) + "," + str(valid_pointer[key]) + ")." + "\n"
                 output.write(fact)
+
+            keys = unknown_pointer.keys()
+            keys.sort()
+            for key in keys:
+                #fact = "unknownpointer(" + hex(paddr) + "," + str(key) + "," + str(unknown_pointer[key]) + ")." + "\n"
+                fact = "unknownpointer(" + hex(paddr + key) + "," + str(unknown_pointer[key]) + ")." + "\n"
+                output.write(fact)
+
             keys = valid_long.keys()
             keys.sort()
             for key in keys:
-                fact = "islong(" + hex(paddr) + "," + str(key) + "," + str(valid_long[key]) + ")." + "\n"
+                #fact = "islong(" + hex(paddr) + "," + str(key) + "," + str(valid_long[key]) + ")." + "\n"
+                fact = "islong(" + hex(paddr + key) + "," + str(valid_long[key]) + ")." + "\n"
                 output.write(fact)
+
             keys = valid_int.keys()
             keys.sort()
             for key in keys:
-                fact = "isint(" + hex(paddr) + "," + str(key) + "," + str(valid_int[key]) + ")." + "\n"
+                #fact = "isint(" + hex(paddr) + "," + str(key) + "," + str(valid_int[key]) + ")." + "\n"
+                fact = "isint(" + hex(paddr + key) + "," + str(valid_int[key]) + ")." + "\n"
                 output.write(fact)
+
             keys = valid_stirng.keys()
             keys.sort()
             for key in keys:
-                fact = "isstring(" + hex(paddr) + "," + str(key) + "," + str(valid_stirng[key]) + ")." + "\n"
+                #fact = "isstring(" + hex(paddr) + "," + str(key) + "," + str(valid_stirng[key]) + ")." + "\n"
+                fact = "isstring(" + hex(paddr + key) + "," + str(valid_stirng[key]) + ")." + "\n"
                 output.write(fact)
         
         return valid_pointer
@@ -338,6 +363,19 @@ class AddressSpace(linux.AMD64PagedMemory):
             print "next process", pname, "at", hex(init_addr), "with pid", pid
             if init_addr == 0x3810500:
                 break
+
+    
+    def find_swapper_page(self):
+        for step in range(0, self.mem.size(), 4096):
+            page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
+            if not page:
+                continue
+            for idx in range(0, 4096, 8):
+                if "swapper/" in page[idx:idx+8]:
+                    return step
+            
+        print "[-] Error: Swapper page not found"
+        exit(0)
 
     def find_comm(self):
         # This function want to find whether the shuffled offsets in task structure 

@@ -1,4 +1,5 @@
 import program as pg
+result = {}
 def main():
     paddr = 0x1605ff8
 
@@ -11,17 +12,35 @@ def main():
     paddr = 0x14775a8
     #extract_info("/home/zhenxiao/images/debian_x64.bin", paddr, 8)
     #extract_info_r("/home/zhenxiao/images/debian_x64.bin", paddr, 2048, "/home/zhenxiao/ProfileGenerator/debian.pl")
-    parse_dwarf('/home/zhenxiao/Desktop/module.dwarf')
+    #parse_dwarf('/home/zhenxiao/Desktop/module.dwarf')
     #extract_info("/home/zhenxiao/images/lubuntu_x64_ASLR.bin", 0x11210500, 4096)
-    #parse_profile()
-    s = "swapper/"
-    if all( ord(c) > 46 and ord(c) < 122 for c in s):
-        print "test"
-    else:
-        print "fail"
-    for x in s:
-        print ord(x)
+    parse_profile()
+
+
     
+    
+def test(file_path):
+    with open(file_path) as f:
+        global result
+        line = f.readline()
+        while line:
+            if "average" in line or "send" in line or "executed" in line or "Aborted" in line or "Flush" in line:
+                idx1 = line.find(" ")
+                idx2 = line.find(":")
+                name = line[idx1:idx2]
+                idx3 = line.find(" ", idx2+2)
+                value = line[idx2+2:idx3]
+                #tmp_list.append(line[idx:idx])
+                line = f.readline()
+                #print "[-] name {}, value {}".format(name, value)
+                if name not in result.keys():
+                    result[name] = [value]
+                else:
+                    result[name].append(value)
+            else:
+                line = f.readline()
+
+
 def parse_dwarf(file_path):
     with open(file_path, 'r') as dwarf:
         line = dwarf.readline()
