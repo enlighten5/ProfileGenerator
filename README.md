@@ -24,13 +24,13 @@ An automated solution to generate profile for memory forensic and virtual machin
 
 This tool is tested on several Debian and Ubuntu systems, with Linux kernel from 2.6 to 4.10. 
 
-One test image (Ubuntu 16.04 LTS) can be found here:     
-`$ wget https://cluster.hpcc.ucr.edu/~zqi020/image/lubuntu_x64.bin` 
+One test image (Ubuntu 16.04 LTS) and System.map file can be found here:     
+`$ wget https://cluster.hpcc.ucr.edu/~zqi020/image/4.11.bin`    
+`$ wget https://cluster.hpcc.ucr.edu/~zqi020/image/System.map-4.11` 
 
 ### Run it    
 `$ cd prolog_engine`    
 `$ python prolog_query.py /PATH/TO/TEST/IMAGE /PATH/TO/SYSTEM.MAP`    
-* Currently it identifies offsets for some fields in `task_struct`, e.g. `tasks`, `mm_struct`, `comm`, `parent`, etc.
 
 * For the current implementation, it requires the System.map file to compute the KASLR shift and address of init_task.
 
