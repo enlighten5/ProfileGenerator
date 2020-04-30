@@ -312,40 +312,50 @@ class AddressSpace(linux.AMD64PagedMemory):
 
         
         with open(output, 'a') as output:
+            output.write("pointer([\n")
             keys = valid_pointer.keys()
             keys.sort()
             for key in keys:
                 #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
-                fact = "ispointer(" + hex(paddr + key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t[" + hex(paddr + key) + "," + str(valid_pointer[key]) + "]," + "\n"
                 output.write(fact)
+            output.write("\t\t[0, 0]\n]).\n")
 
+            output.write("unknown([\n")
             keys = unknown_pointer.keys()
             keys.sort()
             for key in keys:
                 #fact = "unknownpointer(" + hex(paddr) + "," + str(key) + "," + str(unknown_pointer[key]) + ")." + "\n"
-                fact = "unknownpointer(" + hex(paddr + key) + "," + str(unknown_pointer[key]) + ")." + "\n"
+                fact = "\t\t[" + hex(paddr + key) + "," + str(unknown_pointer[key]) + "]," + "\n"
                 output.write(fact)
+            output.write("\t\t[0, 0]\n]).\n")
 
+            output.write("long([\n")
             keys = valid_long.keys()
             keys.sort()
             for key in keys:
                 #fact = "islong(" + hex(paddr) + "," + str(key) + "," + str(valid_long[key]) + ")." + "\n"
-                fact = "islong(" + hex(paddr + key) + "," + str(valid_long[key]) + ")." + "\n"
+                fact = "\t\t[" + hex(paddr + key) + "," + str(valid_long[key]) + "]," + "\n"
                 output.write(fact)
+            output.write("\t\t[0, 0]\n]).\n")
 
+            output.write("int([\n")
             keys = valid_int.keys()
             keys.sort()
             for key in keys:
                 #fact = "isint(" + hex(paddr) + "," + str(key) + "," + str(valid_int[key]) + ")." + "\n"
-                fact = "isint(" + hex(paddr + key) + "," + str(valid_int[key]) + ")." + "\n"
+                fact = "\t\t[" + hex(paddr + key) + "," + str(valid_int[key]) + "]," + "\n"
                 output.write(fact)
+            output.write("\t\t[0, 0]\n]).\n")
 
+            output.write("string_val([\n")
             keys = valid_stirng.keys()
             keys.sort()
             for key in keys:
                 #fact = "isstring(" + hex(paddr) + "," + str(key) + "," + str(valid_stirng[key]) + ")." + "\n"
-                fact = "isstring(" + hex(paddr + key) + "," + str(valid_stirng[key]) + ")." + "\n"
+                fact = "\t\t[" + hex(paddr + key) + "," + str(valid_stirng[key]) + "]," + "\n"
                 output.write(fact)
+            output.write("\t\t[0, 0]\n]).\n")
         
         return valid_pointer
 

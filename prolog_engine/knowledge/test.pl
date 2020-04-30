@@ -107,7 +107,16 @@ flirt_constraint(Suzy, FlirtPeriods) :-
 
 flirty_period(Period, Suzy, Nathan, John) :-
 	Class in 1..6,
-	DiffClass #\= Class,
+    DiffClass #\= Class,
+    DiffClass #\= 0,
 	element(Period, Suzy, Class),
 	element(Period, Nathan, Class),
 	element(Period, John, DiffClass).
+
+string_val([
+    [0, 0]
+    ]).
+
+test_val(X) :-
+    current_predicate(string_val/1),
+    X = 1.

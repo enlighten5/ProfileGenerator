@@ -11,14 +11,8 @@ class PrologQuery(rm.AddressSpace):
     def construct_kb(self, paddr, input_f, output_f):
         base_addr = paddr & 0xffffffffff000
         with open(output_f, 'w') as kb:
-            kb.write("use_module(library(clpfd))." + "\n")
-            kb.write(":- discontiguous(ispointer/2)." + "\n")
-            kb.write(":- discontiguous(unknownpointer/2)." + "\n")
-            kb.write(":- discontiguous(isint/2)." + "\n")
-            kb.write(":- discontiguous(isstring/2)." + "\n")
-            kb.write(":- discontiguous(islong/2)." + "\n")
-            kb.write("pagebase(" + str(base_addr) + ").\n")
-
+            kb.write(":- use_module(library(clpfd))." + "\n")
+            kb.write(":- style_check(-singleton).\n")
         #self.extract_info(paddr, output_f)
         self.extract_info(base_addr, output_f)
 
@@ -29,16 +23,18 @@ class PrologQuery(rm.AddressSpace):
 
     def start_query(self, paddr):
         self.log("construct kb")
-        self.construct_kb(paddr, "./knowledge/init_rules.pl", "./knowledge/start_query.pl")
+        #self.construct_kb(paddr, "./knowledge/init_rules.pl", "./knowledge/start_query.pl")
+        self.construct_kb(paddr, "./knowledge/query_rules.pl", "./knowledge/test_query.pl")
     
         self.log("start query")
         p = Prolog()
-        p.consult("./knowledge/start_query.pl")
+        p.consult("./knowledge/test_query.pl")
         count = 0
         self.log("finish kb")
 
         #query_cmd = "possible_anything_no_order(Base_addr)"
-        query_cmd = "possible_task_struct(" + str(paddr) + ")" 
+        #query_cmd = "possible_task_struct(" + str(paddr) + ")" 
+        query_cmd = "query_task_struct(" + str(paddr) + ")" 
         for s in p.query(query_cmd, catcherrors=False):
             count += 1
             #print(s["Base_addr"])
@@ -70,7 +66,7 @@ def parse_profile():
 
 def generate_result():
     current_time = time.time()
-    while time.time() - current_time < 600:
+    while time.time() - current_time < 500:
         pass
     parse_profile()
     print "profile saved in final_profile"
@@ -90,12 +86,15 @@ def main():
     #print hex(vaddr_init_task)
 
     paddr = prolog_query.vtop(vaddr_init_task)
-    
+    #paddr = 0x19b51600
+    print hex(paddr)
+
     pid = os.fork()
     if pid > 0:
         # start_query takes a number (dec or hex) as input, not string
         prolog_query.start_query(int(paddr))
     else:
+        pass
         generate_result()
 
     # Ubuntu_x64

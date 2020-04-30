@@ -1,37 +1,9 @@
-2020-04-27 23:30:10	construct kb
-2020-04-27 23:30:10	start query
-2020-04-27 23:30:10	finish kb
-'before ts':4.172325134277344e-5
-'Tasks_addr':333515824
-'before ts':0.8750302791595459
-'Tasks_addr':333515832
-'before ts':1.7190041542053223
-'Tasks_addr':333515848
-'before ts':2.1385915279388428
-'Tasks_addr':333515856
-'before ts':2.5559298992156982
-'Tasks_addr':333515864
-'before ts':2.994799852371216
-'Tasks_addr':333515872
-'before ts':3.430046796798706
-'Tasks_addr':333515880
-'before ts':3.8599700927734375
-'Tasks_addr':333515888
-'before ts':4.2853710651397705
-'Tasks_addr':333515896
-'before ts':4.72770094871521
-'Tasks_addr':333515904
-'before ts':5.1517415046691895
-'Tasks_addr':333515912
-'before ts':6.028609037399292
-'Tasks_addr':333515920
-'before ts':6.464838266372681
-'Tasks_addr':333515928
-'before ts':6.8983683586120605
-'Tasks_addr':333515936
-'before ts':7.340090274810791
-'Tasks_addr':333515944
-'before ts':7.774925947189331
-'Tasks_addr':333515952
-'before ts':8.207462549209595
-'Tasks_addr':333515960
+0x13e104c0L
+2020-04-30 07:18:52	construct kb
+2020-04-30 07:18:52	start query
+2020-04-30 07:18:52	finish kb
+'tasks offset':1904
+'comm offset':2584
+real_parent:2184
+group_leader:2224
+"total time":459.1508071422577

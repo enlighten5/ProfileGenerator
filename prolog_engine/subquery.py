@@ -25,7 +25,7 @@ class SubQuery(pq.PrologQuery):
         tmp_name = "./knowledge/" + hex(base_addr & 0xffffffffff000).strip('L') + ".pl"
 
         if not os.path.exists(tmp_name):
-            self.construct_kb(base_addr, "./knowledge/rules.pl", tmp_name)
+            self.construct_kb(base_addr, "./knowledge/new_rules.pl", tmp_name)
         p = Prolog()
         p.consult(tmp_name)
         if comm_offset and not task_offset:
