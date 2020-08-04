@@ -1,1 +1,6 @@
 *.pyc
+.vscode/
+final_profile
+profile.txt
+*dtb
+*_offset

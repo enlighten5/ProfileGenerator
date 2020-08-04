@@ -1,0 +1,44 @@
+task_struct
+'tasks offset':1904 correct
+'mm offset':1992    correct
+'comm offset':2584  correct
+real_parent:2184    correct
+group_leader:2224   correct
+
+mm_struct
+mmap ['0']          correct
+mmap_base ['32']    correct
+pgd ['64']          correct
+start_brk ['264']   correct 
+brk ['272']         correct
+start_stack ['280'] correct
+arg_start ['288']   correct 
+
+vm_area_struct:
+vm_start ['0', '72'] 
+vm_end ['8', '80']
+vm_next ['16', '88']
+vm_flag ['56', '72', '80', '112'] 80 is correct
+vm_pgoff ['152']    correct
+vm_file ['160']     correct
+
+dentry
+d_iname ['56', '64']  56 correct
+d_parent ['16', '24'] 24 correct
+d_child ['112', '128', '160', '144', '136', '152'] 144 correct
+
+cred
+uid ['4', '8', '12']  first is correct
+gid ['8', '12', '16']
+euid ['20', '24', '28']
+egid ['24', '28', '32']
+
+fs_struct
+Root ['32'] wrong, 24
+pwd ['48']  wrong 40
+
+cred time ['0']
+mm_struct time ['303']
+dentry time ['13', '15', '19', '14', '16', '20', '36', '38', '50', '51', '52', '53', '35', '37', '49']
+vm_area_struct time ['61', '123', '185', '242', '300']
+fs time ['107']

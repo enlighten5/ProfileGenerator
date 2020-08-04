@@ -13,7 +13,12 @@ class SubQuery(pq.PrologQuery):
     def __init__(self):
         # TODO: inherit prologquery without provides image path as a parameter
         # Replace the parameter with the path to memory dump
-        mem_dump = "/home/zhenxiao/images/4.11.bin"
+        mem_dump = "/home/zhenxiao/images/lede-4.4.50.bin"
+        #mem_dump = os.environ["IMAGE_PATH"]
+        if not mem_dump:
+            print "[-] Error: please provide image path"
+            exit(1)
+            
         if not os.path.exists(mem_dump):
             print "[-] Error: replace the mem_dump with the path to the memory dump in subquery.py"
             exit(1)
@@ -21,8 +26,8 @@ class SubQuery(pq.PrologQuery):
 
 
     def subquery(self, base_addr, query_rule, comm_offset = None, task_offset = None):
-        #tmp_name = "./knowledge/" + str(random.random()) + ".pl"
-        tmp_name = "./knowledge/" + hex(base_addr & 0xffffffffff000).strip('L') + ".pl"
+        tmp_name = "./knowledge/" + str(random.random()) + ".pl"
+        #tmp_name = "./knowledge/" + hex(base_addr & 0xffffffffff000).strip('L') + ".pl"
 
         if not os.path.exists(tmp_name):
             self.construct_kb(base_addr, "./knowledge/new_rules.pl", tmp_name)
@@ -50,7 +55,7 @@ class SubQuery(pq.PrologQuery):
             print 1
         else:
             print 0
-        #os.remove(tmp_name)
+        os.remove(tmp_name)
 
 def main():
     base_addr = int(sys.argv[1])

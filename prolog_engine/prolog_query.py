@@ -9,7 +9,8 @@ class PrologQuery(rm.AddressSpace):
         rm.AddressSpace.__init__(self, image_path, 0)
 
     def construct_kb(self, paddr, input_f, output_f):
-        base_addr = paddr & 0xffffffffff000
+        #base_addr = paddr & 0xffffffffff000
+        base_addr = paddr
         with open(output_f, 'w') as kb:
             kb.write(":- use_module(library(clpfd))." + "\n")
             kb.write(":- style_check(-singleton).\n")
@@ -35,10 +36,13 @@ class PrologQuery(rm.AddressSpace):
         #query_cmd = "possible_anything_no_order(Base_addr)"
         #query_cmd = "possible_task_struct(" + str(paddr) + ")" 
         query_cmd = "query_task_struct(" + str(paddr) + ")" 
+        #query_cmd = "test(" + str(paddr) + ")" 
         for s in p.query(query_cmd, catcherrors=False):
             count += 1
+            if count:
+                break
             #print(s["Base_addr"])
-        #print "count result:", count
+        print "count result:", count
 
 
 def parse_profile():
@@ -72,30 +76,54 @@ def generate_result():
     print "profile saved in final_profile"
 
 
+def test():
+    prolog_query = PrologQuery(sys.argv[1])
+    prolog_query.find_string("kthreadd")
+    #openwrt
+    #prolog_query.find_tasks(0x7040f78-3000)
+    #lede
+    #prolog_query.find_tasks(0x7058e78-3000)
+    #prolog_query.find_tasks(0xed30ee0-3000)
+    
+
+    
+
 def main():
     if len(sys.argv) < 3:
         print "[-] Usage: please provide image path and System.map path at inputs"
         exit(0)
     
     prolog_query = PrologQuery(sys.argv[1])
+    os.environ["IMAGE_PATH"] = sys.argv[1]
     prolog_query.parse_system_map(sys.argv[2])
-    #print prolog_query.init_top_pgt_from_system_map, prolog_query.init_task_from_system_map
-
+    print prolog_query.init_top_pgt_from_system_map, prolog_query.init_task_from_system_map
+    '''
     virtual_shift = int(prolog_query.dtb_vaddr, 16) - int(prolog_query.init_top_pgt_from_system_map, 16)
     vaddr_init_task = int(prolog_query.init_task_from_system_map, 16) + virtual_shift
     #print hex(vaddr_init_task)
-
+    #vaddr_init_task = 0xffffffff81c18480
     paddr = prolog_query.vtop(vaddr_init_task)
-    #paddr = 0x19b51600
-    print hex(paddr)
+    '''
+    #paddr = 0x4018af8-1656
+    paddr = 0x1ed8c900 - 1984
+    paddr = prolog_query.find_swapper_page()
+    #openwrt
+    paddr = 0x1c10480
+    #lede
+    paddr = 0x15c04c0
+    #goldfish
+    #paddr = 0x1e114a0
 
     pid = os.fork()
     if pid > 0:
         # start_query takes a number (dec or hex) as input, not string
+        #paddr = prolog_query.find_swapper_page()
         prolog_query.start_query(int(paddr))
+        print os.environ["IMAGE_PATH"]
+        #prolog_query.pslist(paddr)
     else:
         pass
-        generate_result()
+        #generate_result()
 
     # Ubuntu_x64
     #prolog_query.start_query(0x3810500)
@@ -120,5 +148,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    #test()
 
         

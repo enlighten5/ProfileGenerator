@@ -27,9 +27,14 @@ as([L|Ls]) :-
 test(X, Y) :- 
     Vars = [X, Y],
     X in 0..10,
-    Y in 4..8,
+    Y in 0..8,
     X #> Y,
-    label(Vars).
+    labeling([ff, up, enum], Vars),
+    if_(X = 5,
+        call(toy, X, Y),
+        1 = 1).
+
+    %label(Vars).
 
 foo(X) :- X in 1..3 .
 foo(X) :- X in 5..7 .
@@ -44,7 +49,7 @@ puzzle([S,E,N,D] + [M,O,R,E] = [M,O,N,E,Y]) :-
         M*10000 + O*1000 + N*100 + E*10 + Y,
         M #\= 0, S #\= 0,
 		label(Vars). 
-
+/*
 increase([]).
 increase([L1, L2]):-
     L1 < L2.
@@ -54,7 +59,12 @@ increase([L1,L2|Ls]) :-
     L1 < L2,   
     label([L1, L2]),
     increase(Ls).
+*/
 
+increase([_L1, _L2, _L3, _L4]) :-
+    Vars = [_L1, _L2, _L3, _L4],
+    chain(Vars, #<),
+    label(Vars).
 test_len(X, Y) :-
     integer(Y),
     length(X, Y),
@@ -120,3 +130,7 @@ string_val([
 test_val(X) :-
     current_predicate(string_val/1),
     X = 1.
+
+foo(X) :- X in 1..3.
+foo(X) :- X in 5..7.
+foo(X) :- X in 8..12.
