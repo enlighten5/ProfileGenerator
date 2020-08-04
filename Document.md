@@ -65,3 +65,22 @@ successive pointer *active_mm which also points to a mm_struct, the offset betwe
 In general, there are two types of rules, property rules and recursive rules. 
 
 
+## Evaluation
+
+| OS | Linux Kernel | Precision | Accuracy |
+| :---: | :---: | :---: | :---: |
+| Centos-6 | Linux-2.6  | 96% | 96.2% |
+| Centos-7 | Linux-3.10 | 88% | 96.2% |
+| Centos-8 | Linux-4.18 | 88% | 96.2% |
+| Rhel-8   | Linux-4.18 | 88% | 96.2% |
+| Sles-15  | Linux-4.12 | 88% | 96.2% |
+|          | Linux-4.13 | 88% | 96.2% |
+|          | Linux-4.14 | 88% | 96.2% |
+| Ubuntu-18.04  | Linux-5.3 | 92% | 96.2% |
+| Ubuntu-19.04  | Linux-5.3 | 92% | 96.2% |
+| Ubuntu-20.04  | Linux-5.4 | 92% | 96.2% |
+| Goldfish      | Linux-3.18| 88% | 96.2% |
+| Lede-17.01  | Linux-4.4 | 92% | 96.2% |
+| Openwrt-18.04  | Linux-4.15 | 92% | 96.2% |
+
+
