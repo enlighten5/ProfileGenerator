@@ -24,7 +24,7 @@ but if we have that information, it can facilitate the process. It is resilient 
 randomized in the memory, we can still figure the layout of data structures.
 
 ## Related works:
-
+![Workflow](path127.png)
 ## Methodology:
 ### Parsing the image headers
 Given a memory dump, the first step to do is parsing the headers to know where the memory region begins. For instance, the memory images dumped 
