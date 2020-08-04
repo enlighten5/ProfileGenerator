@@ -18,7 +18,38 @@ offset2 = [
     (4244635648, 536806592, 16777216),
     (4294705152, 553583808, 262144)
 ]
-
+offset3 = [
+    (0, 400, 816),
+    (0, 1216, 655360),
+    (655360, 656576, 65536),
+    (786432, 722112, 133431296),
+    (4244635648, 134153408, 16777216),
+    (4294705152, 150930624, 262144)
+]
+#centos6
+offset4 = [
+    (0, 344, 816),
+    (0, 1160, 655360),
+    (786432, 656520, 267649024),
+    (4244635648, 268305544, 16777216),
+    (4294705152, 285082760, 262144)
+]
+# lede-4.4.50
+offset5 = [
+    (0, 344, 816),
+    (0, 1160, 655360),
+    (786432, 656520, 133431296),
+    (4244635648, 134087816, 16777216),
+    (4294705152, 150865032, 262144)
+]
+#goldfish
+offset6 = [
+    (0, 344, 816),
+    (0, 1160, 655360),
+    (786432, 656520, 267649024),
+    (4244635648, 268305544, 16777216),
+    (4294705152, 285082760, 262144)
+]
 class AddressSpace(linux.AMD64PagedMemory):
     def __init__(self, mem_path, dtb = 0):
         try:
@@ -33,7 +64,10 @@ class AddressSpace(linux.AMD64PagedMemory):
             print "Error mmap\n"
             sys.exit(1)
         self.verbose = 0
-        self.offset = offset2
+        #offset2: lubuntu20 centos8 4.12 4.13 4.14 4.18 5.3
+        #offset3:
+        #offset4: 
+        self.offset = offset6
         self.mem_path = mem_path
         self.mem.seek(0)
         
@@ -45,12 +79,29 @@ class AddressSpace(linux.AMD64PagedMemory):
             self.has_elf_header = False
 
         vdtb_idx = self.mem.find("SYMBOL(swapper_pg_dir)=") + len("SYMBOL(swapper_pg_dir)=")
-        if vdtb_idx:
+        if vdtb_idx-len("SYMBOL(swapper_pg_dir)=")>0:
             self.mem.seek(vdtb_idx)
             dtb_vaddr = "0x" + self.mem.read(16)
-            #print "dtb_vaddr", dtb_vaddr
+            print "dtb_vaddr", dtb_vaddr
         else:
-            dtb_vaddr = 0
+            print "cannot find dtb_vaddr"
+            dtb_vaddr = "0xffffffff815c0920"
+        '''
+        init_task_vaddr = self.mem.find("SYMBOL(init_top_pgt)=")
+        if init_task_vaddr < 0:
+            init_task_vaddr = self.mem.find("SYMBOL(init_level4_pgt)=")
+            if init_task_vaddr < 0:
+                print "[-] Error: cannot find init_pgt form the image"
+            else:
+                init_task_vaddr += len("SYMBOL(init_level4_pgt)=")
+        else:
+            init_task_vaddr +=  len("SYMBOL(init_top_pgt)=")
+        if init_task_vaddr:
+            self.mem.seek(init_task_vaddr)
+            self.init_task = '0x'+self.mem.read(16)
+        else:
+            self.init_task = 0
+        '''
 
         image_name = os.path.basename(mem_path)
         store_dtb = "./" + image_name + "_dtb"
@@ -72,7 +123,9 @@ class AddressSpace(linux.AMD64PagedMemory):
             #print "get dtb", g_dtb
             self.dtb = g_dtb
         else:
+            pass
             #self.find_dtb(0x1a000000)
+            
             self.find_dtb(0x1000000)
             # There is another page table when searchingfrom 0x0. but not complete.
             #self.find_dtb(0x0)
@@ -95,7 +148,7 @@ class AddressSpace(linux.AMD64PagedMemory):
         self.init_task_from_system_map = init_task_from_system_map
         self.init_top_pgt_from_system_map = init_top_pgt_from_system_map
         
-        #print "[-] init_task_from_system_map: {}, init_top_pgt_from_system_map: {}".format(init_task_from_system_map, init_top_pgt_from_system_map)
+        print "[-] init_task_from_system_map: {}, init_top_pgt_from_system_map: {}".format(init_task_from_system_map, init_top_pgt_from_system_map)
 
 
     def log(self, message):
@@ -275,20 +328,20 @@ class AddressSpace(linux.AMD64PagedMemory):
                 elif number < 0xffffffffffff:
                     str_content = content[item*8:(item+1)*8]
                     if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
-                        if len(str_content.replace('\x00', '')) > 4:
+                        if len(str_content.replace('\x00', '')) >= 4:
                             if self.verbose:
                                 print "[-] ", item*8, hex(paddr+item*8), "string: ", str_content, hex(number)
                             valid_stirng[item*8] = number
                     if self.verbose:
                         pass
-                        print "[-] ", item*8, hex(paddr+item*8), "unsigned long: ", hex(number)
+                        print "[-] ", item*8, hex(paddr+item*8), "unsigned long: ", hex(number), content[item*8:item*8+8]
                     valid_long[item*8] = number
                 elif number == 0xffffffffffffffff:
                     pass
                 else:
                     # add for test randstruct
                     str_content = content[item*8:(item+1)*8]
-                    if all( ord(c) >= 47 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
+                    if all( ord(c) >= 45 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
                         if len(str_content.replace('\x00', '')) > 4:
                             if self.verbose:
                                 print "[-] ", item*8, hex(paddr+item*8), "string: ", str_content, hex(number)
@@ -308,60 +361,158 @@ class AddressSpace(linux.AMD64PagedMemory):
             if number < 0x7fff:
                 #print "int: ", hex(number), idx*4
                 valid_int[idx*4] = number
-        
-
-        
+        '''
         with open(output, 'a') as output:
+            output.write("pointer_addr([\n")
             keys = valid_pointer.keys()
             keys.sort()
             for key in keys:
                 #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
-                fact = "ispointer(" + hex(paddr + key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t" + hex(paddr + key) + "," + "\n"
                 output.write(fact)
+            output.write("\t\t0\n]).\n")
+            output.write("pointer_val([\n")
+            keys = valid_pointer.keys()
+            keys.sort()
+            for key in keys:
+                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t" + str(valid_pointer[key]) + "," + "\n"
+                output.write(fact)
+            output.write("\t\t0\n]).\n")
 
+            output.write("unknown_addr([\n")
+            keys = unknown_pointer.keys()
+            keys.sort()
+            for key in keys:
+                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t" + hex(paddr + key) + "," + "\n"
+                output.write(fact)
+            output.write("\t\t0\n]).\n")
+            output.write("unknown_val([\n")
+            keys = unknown_pointer.keys()
+            keys.sort()
+            for key in keys:
+                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t" + str(unknown_pointer[key]) + "," + "\n"
+                output.write(fact)
+            output.write("\t\t0\n]).\n")
+
+            output.write("long_addr([\n")
+            keys = valid_long.keys()
+            keys.sort()
+            for key in keys:
+                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t" + hex(paddr + key) + "," + "\n"
+                output.write(fact)
+            output.write("\t\t0\n]).\n")
+            output.write("long_val([\n")
+            keys = valid_long.keys()
+            keys.sort()
+            for key in keys:
+                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t" + str(valid_long[key]) + "," + "\n"
+                output.write(fact)
+            output.write("\t\t0\n]).\n")
+
+            output.write("int_addr([\n")
+            keys = valid_int.keys()
+            keys.sort()
+            for key in keys:
+                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t" + hex(paddr + key) + "," + "\n"
+                output.write(fact)
+            output.write("\t\t0\n]).\n")
+            output.write("int_val([\n")
+            keys = valid_int.keys()
+            keys.sort()
+            for key in keys:
+                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t" + str(valid_int[key]) + "," + "\n"
+                output.write(fact)
+            output.write("\t\t0\n]).\n")
+
+
+            output.write("str_addr([\n")
+            keys = valid_stirng.keys()
+            keys.sort()
+            for key in keys:
+                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t" + hex(paddr + key) + "," + "\n"
+                output.write(fact)
+            output.write("\t\t0\n]).\n")
+            output.write("str_val([\n")
+            keys = valid_stirng.keys()
+            keys.sort()
+            for key in keys:
+                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t" + str(valid_stirng[key]) + "," + "\n"
+                output.write(fact)
+            output.write("\t\t0\n]).\n")
+        '''
+        with open(output, 'a') as output:
+            output.write("pointer([\n")
+            keys = valid_pointer.keys()
+            keys.sort()
+            for key in keys:
+                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
+                fact = "\t\t[" + hex(paddr + key) + "," + str(valid_pointer[key]) + "]," + "\n"
+                output.write(fact)
+            output.write("\t\t[0, 0]\n]).\n")
+
+            output.write("unknown([\n")
             keys = unknown_pointer.keys()
             keys.sort()
             for key in keys:
                 #fact = "unknownpointer(" + hex(paddr) + "," + str(key) + "," + str(unknown_pointer[key]) + ")." + "\n"
-                fact = "unknownpointer(" + hex(paddr + key) + "," + str(unknown_pointer[key]) + ")." + "\n"
+                fact = "\t\t[" + hex(paddr + key) + "," + str(unknown_pointer[key]) + "]," + "\n"
                 output.write(fact)
+            output.write("\t\t[0, 0]\n]).\n")
 
+            output.write("long([\n")
             keys = valid_long.keys()
             keys.sort()
             for key in keys:
                 #fact = "islong(" + hex(paddr) + "," + str(key) + "," + str(valid_long[key]) + ")." + "\n"
-                fact = "islong(" + hex(paddr + key) + "," + str(valid_long[key]) + ")." + "\n"
+                fact = "\t\t[" + hex(paddr + key) + "," + str(valid_long[key]) + "]," + "\n"
                 output.write(fact)
+            output.write("\t\t[0, 0]\n]).\n")
 
+            output.write("int([\n")
             keys = valid_int.keys()
             keys.sort()
             for key in keys:
                 #fact = "isint(" + hex(paddr) + "," + str(key) + "," + str(valid_int[key]) + ")." + "\n"
-                fact = "isint(" + hex(paddr + key) + "," + str(valid_int[key]) + ")." + "\n"
+                fact = "\t\t[" + hex(paddr + key) + "," + str(valid_int[key]) + "]," + "\n"
                 output.write(fact)
+            output.write("\t\t[0, 0]\n]).\n")
 
+            output.write("string_val([\n")
             keys = valid_stirng.keys()
             keys.sort()
             for key in keys:
                 #fact = "isstring(" + hex(paddr) + "," + str(key) + "," + str(valid_stirng[key]) + ")." + "\n"
-                fact = "isstring(" + hex(paddr + key) + "," + str(valid_stirng[key]) + ")." + "\n"
+                fact = "\t\t[" + hex(paddr + key) + "," + str(valid_stirng[key]) + "]," + "\n"
                 output.write(fact)
+            output.write("\t\t[0, 0]\n]).\n")
         
         return valid_pointer
 
     
-    def pslist(self):
-        init_addr = 0x3810500
+    def pslist(self, init):
+        init_addr = 123798656
         while True:
-            content = self.read_memory(init_addr + 1928, 8)
+            content = self.read_memory(init_addr + 1976, 8)
             value = struct.unpack("<Q", content)[0]
             p_next_task = self.vtop(value)
-            pname = self.read_memory(p_next_task + 680, 8)
-            init_addr = p_next_task - 1928
-            pid = self.read_memory(init_addr + 2184, 4)
+            if not p_next_task:
+                print "cannot find next task"
+                return
+            pname = self.read_memory(p_next_task - 1976 + 2656, 8)
+            init_addr = p_next_task - 1976
+            pid = self.read_memory(init_addr + 2232, 4)
             pid = struct.unpack("<I", pid)[0]
             print "next process", pname, "at", hex(init_addr), "with pid", pid
-            if init_addr == 0x3810500:
+            if init_addr == 123798656:
                 break
 
     
@@ -372,13 +523,73 @@ class AddressSpace(linux.AMD64PagedMemory):
                 continue
             for idx in range(0, 4096, 8):
                 if "swapper/" in page[idx:idx+8]:
-                    return step
+                    print "found swapper", hex(step+idx)
+                    return step+idx
             
         print "[-] Error: Swapper page not found"
         exit(0)
 
+    def find_string(self, target):
+        for step in range(0, self.mem.size(), 4096):
+            page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
+            if not page:
+                continue
+            for idx in range(0, 4096, 8):
+                #print hex(step+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
+                if target in page[idx-16:idx+16]:
+                    print "found ", target, hex(step+idx), page[idx-16:idx+16]
+                    #for tmpidx in range(0, 4096, 8):
+                    #    print hex(step+tmpidx), hex(self.is_user_pointer(page[tmpidx:tmpidx+8], 0))
+                    #return step
+            
+        print "[-] Error: target not found", self.read_memory(0x15c04c0+1192, 8)
+        '''
+        page = self.read_memory(0x15c0000, 0x200 * 8)
+        
+        for idx in range(0, 4096, 8):
+            print hex(0x15c0000+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
+        '''
+        exit(0)
+
+    def find_tasks(self, addr):
+        page = self.read_memory(addr, 0x200 * 8)
+        value = struct.unpack("<512Q", page)
+        
+        for item in range(len(value)):
+            number = value[item]
+            phys_addr = self.vtop(number)
+            if phys_addr:
+                #print "find pointer", hex(number), ""
+                for gap in range(addr, addr+3000, 8):
+                    target_comm = phys_addr + addr+3000 - gap
+                    comm = self.read_memory(target_comm, 8)
+                    if not comm:
+                        continue
+                    if "swapper" in comm:
+                        print "found next task at", comm , hex(addr + item * 8), hex(phys_addr), addr+3000 - gap
+                    '''
+                    if all( ord(c) >= 45 and ord(c) <= 122 or ord(c)==0 for c in comm ):
+                        if len(comm.replace('\x00', '')) > 4:
+                            #if self.verbose:
+                            print "found task struct at", comm , phys_addr, 0x7040f78 - gap
+                    '''
+                gap = addr+3000 - (addr + item * 8)
+                target_comm = phys_addr + gap
+                comm = self.read_memory(target_comm, 8)
+                if not comm:
+                    continue
+                if "swapper" in comm:
+                    print "found next task at", comm , hex(addr + item * 8)
+                '''
+                if all( ord(c) >= 45 and ord(c) <= 122 or ord(c)==0 for c in comm ):
+                    if len(comm.replace('\x00', '')) > 4:
+                        #if self.verbose:
+                        print "found next task at", comm , hex(addr + item * 8)
+                '''        
+
+
     def find_comm(self):
-        # This function want to find whether the shuffled offsets in task structure 
+        # This function wants to find whether the shuffled offsets in task structure 
         # follow the same pattern for all task structure.
         # it goes ahead and search all pointers and save the strings it finds.
 

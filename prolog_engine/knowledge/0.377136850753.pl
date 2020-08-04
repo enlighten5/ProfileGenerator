@@ -1,59 +1,6 @@
 :- use_module(library(clpfd)).
 :- style_check(-singleton).
 pointer([
-		[0x15c04c0,0],
-		[0x15c04c8,22757376],
-		[0x15c04d8,0],
-		[0x15c04e0,0],
-		[0x15c04f8,110879104],
-		[0x15c0518,21650240],
-		[0x15c0530,0],
-		[0x15c0538,0],
-		[0x15c0540,0],
-		[0x15c0548,22807880],
-		[0x15c0550,22807880],
-		[0x15c0558,0],
-		[0x15c0560,0],
-		[0x15c0568,0],
-		[0x15c0570,0],
-		[0x15c0578,0],
-		[0x15c0580,0],
-		[0x15c0588,0],
-		[0x15c0590,0],
-		[0x15c0598,0],
-		[0x15c05a0,0],
-		[0x15c05a8,0],
-		[0x15c05b0,22807984],
-		[0x15c05b8,22807984],
-		[0x15c05c0,0],
-		[0x15c05c8,0],
-		[0x15c05d8,0],
-		[0x15c05e0,22808032],
-		[0x15c05e8,0],
-		[0x15c05f0,0],
-		[0x15c05f8,0],
-		[0x15c0600,0],
-		[0x15c0608,0],
-		[0x15c0610,0],
-		[0x15c0618,0],
-		[0x15c0620,0],
-		[0x15c0628,0],
-		[0x15c0638,0],
-		[0x15c0640,22808128],
-		[0x15c0648,0],
-		[0x15c0650,0],
-		[0x15c0658,0],
-		[0x15c0660,0],
-		[0x15c0668,17367216],
-		[0x15c0670,130079168],
-		[0x15c0678,0],
-		[0x15c0680,0],
-		[0x15c0698,0],
-		[0x15c06a0,0],
-		[0x15c06a8,0],
-		[0x15c06b0,0],
-		[0x15c06b8,117801464],
-		[0x15c06c0,1109304],
 		[0x15c06d0,22808272],
 		[0x15c06d8,22808272],
 		[0x15c06e0,22808288],
@@ -491,26 +438,79 @@ pointer([
 		[0x15c14a8,0],
 		[0x15c14b0,0],
 		[0x15c14b8,0],
+		[0x15c14c0,0],
+		[0x15c14c8,0],
+		[0x15c14d0,0],
+		[0x15c14d8,0],
+		[0x15c14e0,0],
+		[0x15c14e8,0],
+		[0x15c14f0,0],
+		[0x15c14f8,0],
+		[0x15c1500,0],
+		[0x15c1508,0],
+		[0x15c1510,0],
+		[0x15c1518,0],
+		[0x15c1520,0],
+		[0x15c1528,0],
+		[0x15c1530,0],
+		[0x15c1538,0],
+		[0x15c1540,0],
+		[0x15c1548,0],
+		[0x15c1550,0],
+		[0x15c1558,0],
+		[0x15c1560,0],
+		[0x15c1568,0],
+		[0x15c1570,0],
+		[0x15c1578,0],
+		[0x15c1580,0],
+		[0x15c1588,0],
+		[0x15c1590,0],
+		[0x15c1598,0],
+		[0x15c15a0,0],
+		[0x15c15a8,0],
+		[0x15c15b0,0],
+		[0x15c15b8,0],
+		[0x15c15c0,0],
+		[0x15c15c8,0],
+		[0x15c15d0,0],
+		[0x15c15d8,0],
+		[0x15c15e0,0],
+		[0x15c15e8,0],
+		[0x15c15f0,0],
+		[0x15c15f8,0],
+		[0x15c1600,0],
+		[0x15c1608,0],
+		[0x15c1610,0],
+		[0x15c1618,0],
+		[0x15c1620,0],
+		[0x15c1628,0],
+		[0x15c1630,0],
+		[0x15c1638,0],
+		[0x15c1640,0],
+		[0x15c1648,0],
+		[0x15c1650,0],
+		[0x15c1658,0],
+		[0x15c1660,0],
+		[0x15c1668,0],
+		[0x15c1670,0],
+		[0x15c1678,0],
+		[0x15c1680,0],
+		[0x15c1688,0],
+		[0x15c1690,0],
+		[0x15c1698,0],
+		[0x15c16a0,0],
+		[0x15c16a8,0],
+		[0x15c16b0,0],
+		[0x15c16b8,0],
+		[0x15c16c0,0],
+		[0x15c16c8,0],
 		[0, 0]
 ]).
 unknown([
-		[0x15c04d0,9007199254740994],
 		[0x15c07b8,17069850242533354482],
 		[0, 0]
 ]).
 long([
-		[0x15c04e8,47244640257],
-		[0x15c04f0,4294941155],
-		[0x15c0500,4294967296],
-		[0x15c0508,515396075640],
-		[0x15c0510,120],
-		[0x15c0520,1024],
-		[0x15c0528,4194304],
-		[0x15c05d0,10],
-		[0x15c0630,1],
-		[0x15c0688,4294967296],
-		[0x15c0690,1],
-		[0x15c06c8,140],
 		[0x15c08a0,4],
 		[0x15c08b0,4],
 		[0x15c08e0,430],
@@ -521,109 +521,6 @@ long([
 		[0, 0]
 ]).
 int([
-		[0x15c04c0,0],
-		[0x15c04c4,0],
-		[0x15c04d0,2],
-		[0x15c04d8,0],
-		[0x15c04dc,0],
-		[0x15c04e0,0],
-		[0x15c04e4,0],
-		[0x15c04e8,1],
-		[0x15c04ec,11],
-		[0x15c04f4,0],
-		[0x15c0500,0],
-		[0x15c0504,1],
-		[0x15c0508,120],
-		[0x15c050c,120],
-		[0x15c0510,120],
-		[0x15c0514,0],
-		[0x15c0520,1024],
-		[0x15c0524,0],
-		[0x15c052c,0],
-		[0x15c0530,0],
-		[0x15c0534,0],
-		[0x15c0538,0],
-		[0x15c053c,0],
-		[0x15c0540,0],
-		[0x15c0544,0],
-		[0x15c0558,0],
-		[0x15c055c,0],
-		[0x15c0560,0],
-		[0x15c0564,0],
-		[0x15c0568,0],
-		[0x15c056c,0],
-		[0x15c0570,0],
-		[0x15c0574,0],
-		[0x15c0578,0],
-		[0x15c057c,0],
-		[0x15c0580,0],
-		[0x15c0584,0],
-		[0x15c0588,0],
-		[0x15c058c,0],
-		[0x15c0590,0],
-		[0x15c0594,0],
-		[0x15c0598,0],
-		[0x15c059c,0],
-		[0x15c05a0,0],
-		[0x15c05a4,0],
-		[0x15c05a8,0],
-		[0x15c05ac,0],
-		[0x15c05c0,0],
-		[0x15c05c4,0],
-		[0x15c05c8,0],
-		[0x15c05cc,0],
-		[0x15c05d0,10],
-		[0x15c05d4,0],
-		[0x15c05d8,0],
-		[0x15c05dc,0],
-		[0x15c05e8,0],
-		[0x15c05ec,0],
-		[0x15c05f0,0],
-		[0x15c05f4,0],
-		[0x15c05f8,0],
-		[0x15c05fc,0],
-		[0x15c0600,0],
-		[0x15c0604,0],
-		[0x15c0608,0],
-		[0x15c060c,0],
-		[0x15c0610,0],
-		[0x15c0614,0],
-		[0x15c0618,0],
-		[0x15c061c,0],
-		[0x15c0620,0],
-		[0x15c0624,0],
-		[0x15c0628,0],
-		[0x15c062c,0],
-		[0x15c0630,1],
-		[0x15c0634,0],
-		[0x15c0638,0],
-		[0x15c063c,0],
-		[0x15c0648,0],
-		[0x15c064c,0],
-		[0x15c0650,0],
-		[0x15c0654,0],
-		[0x15c0658,0],
-		[0x15c065c,0],
-		[0x15c0660,0],
-		[0x15c0664,0],
-		[0x15c0678,0],
-		[0x15c067c,0],
-		[0x15c0680,0],
-		[0x15c0684,0],
-		[0x15c0688,0],
-		[0x15c068c,1],
-		[0x15c0690,1],
-		[0x15c0694,0],
-		[0x15c0698,0],
-		[0x15c069c,0],
-		[0x15c06a0,0],
-		[0x15c06a4,0],
-		[0x15c06a8,0],
-		[0x15c06ac,0],
-		[0x15c06b0,0],
-		[0x15c06b4,0],
-		[0x15c06c8,140],
-		[0x15c06cc,0],
 		[0x15c06f0,0],
 		[0x15c06f4,0],
 		[0x15c06f8,0],
@@ -1418,6 +1315,138 @@ int([
 		[0x15c14b4,0],
 		[0x15c14b8,0],
 		[0x15c14bc,0],
+		[0x15c14c0,0],
+		[0x15c14c4,0],
+		[0x15c14c8,0],
+		[0x15c14cc,0],
+		[0x15c14d0,0],
+		[0x15c14d4,0],
+		[0x15c14d8,0],
+		[0x15c14dc,0],
+		[0x15c14e0,0],
+		[0x15c14e4,0],
+		[0x15c14e8,0],
+		[0x15c14ec,0],
+		[0x15c14f0,0],
+		[0x15c14f4,0],
+		[0x15c14f8,0],
+		[0x15c14fc,0],
+		[0x15c1500,0],
+		[0x15c1504,0],
+		[0x15c1508,0],
+		[0x15c150c,0],
+		[0x15c1510,0],
+		[0x15c1514,0],
+		[0x15c1518,0],
+		[0x15c151c,0],
+		[0x15c1520,0],
+		[0x15c1524,0],
+		[0x15c1528,0],
+		[0x15c152c,0],
+		[0x15c1530,0],
+		[0x15c1534,0],
+		[0x15c1538,0],
+		[0x15c153c,0],
+		[0x15c1540,0],
+		[0x15c1544,0],
+		[0x15c1548,0],
+		[0x15c154c,0],
+		[0x15c1550,0],
+		[0x15c1554,0],
+		[0x15c1558,0],
+		[0x15c155c,0],
+		[0x15c1560,0],
+		[0x15c1564,0],
+		[0x15c1568,0],
+		[0x15c156c,0],
+		[0x15c1570,0],
+		[0x15c1574,0],
+		[0x15c1578,0],
+		[0x15c157c,0],
+		[0x15c1580,0],
+		[0x15c1584,0],
+		[0x15c1588,0],
+		[0x15c158c,0],
+		[0x15c1590,0],
+		[0x15c1594,0],
+		[0x15c1598,0],
+		[0x15c159c,0],
+		[0x15c15a0,0],
+		[0x15c15a4,0],
+		[0x15c15a8,0],
+		[0x15c15ac,0],
+		[0x15c15b0,0],
+		[0x15c15b4,0],
+		[0x15c15b8,0],
+		[0x15c15bc,0],
+		[0x15c15c0,0],
+		[0x15c15c4,0],
+		[0x15c15c8,0],
+		[0x15c15cc,0],
+		[0x15c15d0,0],
+		[0x15c15d4,0],
+		[0x15c15d8,0],
+		[0x15c15dc,0],
+		[0x15c15e0,0],
+		[0x15c15e4,0],
+		[0x15c15e8,0],
+		[0x15c15ec,0],
+		[0x15c15f0,0],
+		[0x15c15f4,0],
+		[0x15c15f8,0],
+		[0x15c15fc,0],
+		[0x15c1600,0],
+		[0x15c1604,0],
+		[0x15c1608,0],
+		[0x15c160c,0],
+		[0x15c1610,0],
+		[0x15c1614,0],
+		[0x15c1618,0],
+		[0x15c161c,0],
+		[0x15c1620,0],
+		[0x15c1624,0],
+		[0x15c1628,0],
+		[0x15c162c,0],
+		[0x15c1630,0],
+		[0x15c1634,0],
+		[0x15c1638,0],
+		[0x15c163c,0],
+		[0x15c1640,0],
+		[0x15c1644,0],
+		[0x15c1648,0],
+		[0x15c164c,0],
+		[0x15c1650,0],
+		[0x15c1654,0],
+		[0x15c1658,0],
+		[0x15c165c,0],
+		[0x15c1660,0],
+		[0x15c1664,0],
+		[0x15c1668,0],
+		[0x15c166c,0],
+		[0x15c1670,0],
+		[0x15c1674,0],
+		[0x15c1678,0],
+		[0x15c167c,0],
+		[0x15c1680,0],
+		[0x15c1684,0],
+		[0x15c1688,0],
+		[0x15c168c,0],
+		[0x15c1690,0],
+		[0x15c1694,0],
+		[0x15c1698,0],
+		[0x15c169c,0],
+		[0x15c16a0,0],
+		[0x15c16a4,0],
+		[0x15c16a8,0],
+		[0x15c16ac,0],
+		[0x15c16b0,0],
+		[0x15c16b4,0],
+		[0x15c16b8,0],
+		[0x15c16bc,0],
+		[0x15c16c0,0],
+		[0x15c16c4,0],
+		[0x15c16c8,0],
+		[0x15c16cc,0],
 		[0, 0]
 ]).
 string_val([
@@ -1425,11 +1454,13 @@ string_val([
 		[0, 0]
 ]).
 :- use_module(library(clpfd)).
+:- use_module(reif).
+:- style_check(-singleton).
 
-isTrue([X, _]):-
+isTrue([X, Y]):-
     X == 49.
 
-isTrue([_|Tail]):-
+isTrue([X|Tail]):-
     isTrue(Tail).
 
 log(File_name, Name, Addr, Base):-
@@ -1441,41 +1472,13 @@ log(File_name, Name, Addr, Base):-
     nl(Stream),
     close(Stream).
 
-start_query(Base_addr) :- 
-    pointer(Ptr),
-    string_val(Str),
-    Ptr_profile = ([
-        [MM2_addr, MM2_val],
-        [Real_parent_addr, Real_parent_val],
-        [Cred_addr, Cred_val],
-        [FS_struct_addr, FS_struct_val]
-    ]),
-    Str_profile = ([
-        [Comm_addr, Comm_val]    
-    ]),
-    chain([MM2_addr, Real_parent_addr, Cred_addr, Comm_addr, FS_struct_addr], #<),
-    Real_parent_addr #> Comm_addr - 500,
-    tuples_in(Ptr_profile, Ptr),
-    tuples_in(Str_profile, Str),
-    labeling([enum], [Real_parent_addr, Real_parent_val,  Comm_addr, Comm_val]),
-    process_create(path('python'),
-                ['subquery.py', Real_parent_val, "task_struct"],
-                [stdout(pipe(In))]),
-    read_string(In, Len, X),
-    string_codes(X, Result),
-    close(In),
-    isTrue(Result).
-
-    
-
-query_task_struct(Base_addr) :-
+possible_task_struct(Base_addr) :-
     get_time(Current),
     current_predicate(string_val/1),
     pointer(Ptr),
     string_val(Str),
     int(Int),
     Ptr_profile = ([
-        [MM_addr, MM_val],
         [MM2_addr, MM2_val],
         [Tasks_addr, Tasks_val],
         [Parent_addr, Parent_val],
@@ -1483,7 +1486,6 @@ query_task_struct(Base_addr) :-
         [Child_addr, Child_val],
         [Group_leader_addr, Group_leader_val],
         [Thread_group_addr, Thread_group_val],
-        [Real_cred_addr, Real_cred_val],
         [Cred_addr, Cred_val],
         [FS_struct_addr, FS_struct_val]
     ]),
@@ -1494,10 +1496,9 @@ query_task_struct(Base_addr) :-
         [Pid_addr, Pid_val],
         [Tgid_addr, Tgid_val]    
     ]),
-    chain([Tasks_addr, MM_addr, MM2_addr, Pid_addr, Tgid_addr, Real_parent_addr, Parent_addr , Child_addr, 
-           Group_leader_addr, Thread_group_addr, Real_cred_addr, Cred_addr, Comm_addr, FS_struct_addr], #<),
+    chain([Tasks_addr, MM2_addr, Pid_addr, Tgid_addr, Real_parent_addr, Parent_addr , Child_addr, 
+           Group_leader_addr, Thread_group_addr, Cred_addr, Comm_addr, FS_struct_addr], #<),
     %MM2_addr #> Base_addr + 1000,
-    MM2_addr #= MM_addr + 8,
     Tasks_addr #> MM2_addr - 100,
     %FS_struct_addr #< Base_addr + 4000,
     Tgid_addr #= Pid_addr + 4,
@@ -1506,10 +1507,8 @@ query_task_struct(Base_addr) :-
     Child_addr #= Parent_addr + 8,
     %FIXME This may be too strong
     Group_leader_addr #=< Child_addr +32,
-    Cred_addr #= Real_cred_addr + 8,
-    /*MM2_addr #= Base_addr + 1160,
-    Comm_addr #= Base_addr + 1656,
-    Tasks_addr #= Base_addr + 1096,*/
+    %Comm_addr #= Base_addr + 1656,
+    %Tasks_addr #= Base_addr + 1072,
     %FS_struct_addr #= Base_addr + 2640,
 
 
@@ -1518,14 +1517,12 @@ query_task_struct(Base_addr) :-
     tuples_in(Int_profile, Int),
 
     label([MM2_addr, MM2_val]),
-    label([MM_addr, MM_val]),
     % make query after labeling
     MM2_val #> 0,
     integer(MM2_val),
-    %Is it safe to do this?
-    %query_mm_struct(MM_val),
+    
     query_mm_struct(MM2_val),
-    labeling([enum], [Tasks_addr, Tasks_val,  Comm_addr, Comm_val, Pid_addr, Tgid_addr ]),
+    labeling([enum], [Tasks_addr, Tasks_val,  Comm_addr, Comm_val ]),
 
     Comm_offset #= Comm_addr - Base_addr,
     Tasks_offset #= Tasks_addr - Base_addr,
@@ -1538,15 +1535,14 @@ query_task_struct(Base_addr) :-
     query_ts(Real_parent_val, Comm_offset, Tasks_offset),
     query_ts(Group_leader_val, Comm_offset, Tasks_offset),
 
-    labeling([enum], [Real_cred_addr, Real_cred_val, Cred_addr, Cred_val]),
+    labeling([enum], [Cred_addr, Cred_val]),
     Cred_val #> 0,
-    query_cred(Real_cred_val),
     query_cred(Cred_val),
-/*
+
     labeling([enum], [FS_struct_addr, FS_struct_val]),
     FS_struct_val #> 0,
     %query_fs_struct(FS_struct_val),
-*/
+
 
 
     get_time(End),
@@ -1560,8 +1556,6 @@ query_task_struct(Base_addr) :-
     log("profile.txt", "parent", Parent_addr, Base_addr),
     log("profile.txt", "group_leader", Group_leader_addr, Base_addr),
     log("profile.txt", "cred", Cred_addr, Base_addr),
-    log("profile.txt", "pid", Pid_addr, Base_addr),
-
 
     
     print_nl('tasks offset', Tasks_offset),
@@ -1571,89 +1565,295 @@ query_task_struct(Base_addr) :-
     print_nl('group_leader', Group_leader_offset),
     print_nl("Finished, total time", Time_past).
 
-
-test(Base_addr) :-
-    get_time(Current),
-    current_predicate(string_val/1),
+possible_mm_struct(Current_addr) :- 
+    statistics(real_time, [Start|_]),
     pointer(Ptr),
-    string_val(Str),
-    int(Int),
-    Ptr_profile = ([
-        [MM2_addr, MM2_val],
-        [Tasks_addr, Tasks_val],
-        [Parent_addr, Parent_val],
-        [Real_parent_addr, Real_parent_val],
-        [Child_addr, Child_val],
-        [Group_leader_addr, Group_leader_val],
-        [Thread_group_addr, Thread_group_val],
-        [Cred_addr, Cred_val],
-        [FS_struct_addr, FS_struct_val]
-    ]),
-    Str_profile = ([
-        [Comm_addr, Comm_val]    
-    ]),
-    Int_profile = ([
-        [Pid_addr, Pid_val],
-        [Tgid_addr, Tgid_val]    
-    ]),
-    chain([Tasks_addr, MM2_addr, Pid_addr, Tgid_addr, Parent_addr, Real_parent_addr, Child_addr, 
-           Group_leader_addr, Thread_group_addr, Cred_addr, Comm_addr, FS_struct_addr], #<),
-    MM2_addr #> Base_addr + 1000,
-    Tasks_addr #> MM2_addr - 100,
-    FS_struct_addr #< Base_addr + 3000,
-    Tgid_addr #= Pid_addr + 4,
-    Parent_addr #< Tgid_addr + 20,
-    Real_parent_addr #= Parent_addr + 8,
-    Child_addr #= Real_parent_addr +8,
-    Group_leader_addr #=< Child_addr +32,
-    %Comm_addr #= Base_addr + 2584,
-    %Tasks_addr #= Base_addr + 1904,
-    %FS_struct_addr #= Base_addr + 2640,
+    long(Ulg),
+    % TODO: ADD vm_area_struct *mmap
+    Ptr_profile = [
+        [Mmap_addr, Mmap_val],
+        [Pgd_addr, Pgd_val]  
+    ],
+    Ulong_profile = [
+        [Mmap_base_addr, Mmap_base_val],
+        [Mmap_legacy_base_addr, Mmap_legacy_base_val],
+        [Task_size_addr, Task_size_val],
+        [High_vm_end_addr, High_vm_end_val],
+        [Start_brk_addr, Start_brk_val],
+        [Brk_addr, Brk_val],
+        [Start_stack_addr, Start_stack_val],
+        [ARG_start_addr, ARG_start_val]
+    ],
+    Mmap_addr #= Current_addr,
 
+
+    Mmap_base_addr #> Mmap_addr,
+    %FIXME mmap_base need more value constraint, because we removed mmap_legacy_base and highest_vm_end.
+    Mmap_base_val #> 0x7f0000000000,
+    %FIXME in old linux version, e.g., there is no mmap_legacy_base and highest_vm_enb
+    %chain([Mmap_base_addr, Mmap_legacy_base_addr, Task_size_addr, High_vm_end_addr, Pgd_addr], #<),
+    chain([Mmap_base_addr, Task_size_addr, Pgd_addr], #<),
+
+    %FIXME: This rule may be too strong
+    %High_vm_end_addr #= Mmap_base_addr + 24, 
+    Pgd_addr #> Task_size_addr,
+    Pgd_addr #=< Task_size_addr + 40,
+    %FIXME: This rule may not be true for other mm_struct.
+    Task_size_val #>= 0x7ffffffff000,
+
+    %Mmap_base_addr #= Current_addr + 40,
+    %Mmap_legacy_base_addr #= Current_addr + 40,
+    %Task_size_addr #= Current_addr + 48,
+    %High_vm_end_addr #= Current_addr + 72,
+
+    Start_brk_addr #> Pgd_addr,
+    Start_stack_val #> 0x7ff000000000,
+    % TODO: Convert this to index comparison. 
+    ARG_start_addr #< Current_addr + 500,
+    chain([Start_brk_addr, Brk_addr, Start_stack_addr, ARG_start_addr], #<),
+    ARG_start_addr #= Start_brk_addr + 24,
+    Brk_val #< 0x7ff000000000,
+    ARG_start_val #> 0x7ff000000000,
+    tuples_in(Ptr_profile, Ptr),
+    tuples_in(Ulong_profile, Ulg),
+
+
+    labeling([enum], [Mmap_addr, Mmap_val, Mmap_base_addr, Pgd_addr, Pgd_val]),
+    Mmap_val #> 0,
+    Pgd_val #> 0,
+    
+    process_create(path('python'),
+                    ['subquery.py', Mmap_val, "vm_area_struct", 2],
+                    [stdout(pipe(In))]),
+    print(In),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result),
+    label([Start_brk_addr, Brk_addr, Start_stack_addr, ARG_start_addr]),
+    statistics(real_time, [End|_]),
+
+    log("profile.txt", "mmap", Mmap_addr, Current_addr),
+    log("profile.txt", "mmap_base", Mmap_base_addr, Current_addr),
+    log("profile.txt", "pgd", Pgd_addr, Current_addr),
+    log("profile.txt", "start_brk", Start_brk_addr, Current_addr),
+    log("profile.txt", "brk", Brk_addr, Current_addr),
+    log("profile.txt", "start_stack", Start_stack_addr, Current_addr),
+    log("profile.txt", "arg_start", ARG_start_addr, Current_addr),
+    log("profile.txt", "mm_struct time", End, Start).
+
+
+possible_vm_area_struct(Base_addr, Level) :-
+    statistics(real_time, [Start|_]),
+    pointer(Ptr),
+    long(Ulg),
+    Ptr_profile = [
+        [VM_next_addr, VM_next_val],
+        [VM_file_addr, VM_file_val]
+    ],
+    Ulong_profile = [
+        [VM_start_addr, VM_start_val],
+        [VM_end_addr, VM_end_val],
+        [VM_flag_addr, VM_flag_val]
+        %VM_pgoff is 0, and we do not consider 0 as ulong
+        %[VM_pgoff_addr, VM_pgoff_val]
+    ],
+    VM_start_addr #>= Base_addr,
+    chain([VM_start_addr, VM_end_addr, VM_next_addr, VM_flag_addr, VM_file_addr], #<),
+    VM_end_addr #= VM_start_addr + 8,
+    VM_next_addr #= VM_end_addr + 8,
+    VM_next_addr #< Base_addr + 32,
+    VM_file_addr #< Base_addr + 180,
+    VM_pgoff_addr #= VM_file_addr - 8,
+    %VM_file_addr #= Base_addr + 160,
 
     tuples_in(Ptr_profile, Ptr),
-    tuples_in(Str_profile, Str),
-    tuples_in(Int_profile, Int),
+    tuples_in(Ulong_profile, Ulg),
+    %FIXME: VM_flag may need value constraints.
 
-    label([MM2_addr, MM2_val]),
-    % make query after labeling
-    MM2_val #> 0,
-    query_mm_struct(MM2_val),
-    labeling([enum], [Tasks_addr, Tasks_val,  Comm_addr, Comm_val ]),
-    %Tasks_addr #= Base_addr + 2040,
-    Comm_offset #= Comm_addr - Base_addr,
-    Tasks_offset #= Tasks_addr - Base_addr,
-    Tasks_val #> 0,
-    query_list_head(Tasks_val, Comm_offset, Tasks_offset),
+    label([VM_next_addr, VM_next_val]),
+    /*if_(Level = 2,
+        call(check_vm_area_struct, VM_next_val, 1),
+        1 = 1),*/
+    %Level #> 1 #==> check_vm_area_struct(VM_next_val, 1),
 
+    labeling([enum], [VM_start_addr, VM_end_addr, VM_flag_addr, VM_pgoff_addr, VM_file_addr, VM_file_val]),
     
-
-
-    get_time(End),
-    Time_past is End - Current,
-    MM_offset #= MM2_addr - Base_addr,
-    Real_parent_offset #= Real_parent_addr - Base_addr,
-    Group_leader_offset #= Group_leader_addr - Base_addr,
-    
-    print_nl('tasks offset', Tasks_offset),
-    print_nl('mm offset', MM_offset),
-    print_nl('comm offset', Comm_offset),
-    print_nl('real_parent', Real_parent_offset),
-    print_nl('group_leader', Group_leader_offset),
-    print_nl("Finished, total time", Time_past).
-
-
-
-query_mm_struct(MM2_val) :-
+    VM_file_val #> 0,
     process_create(path('python'),
-                    ['subquery.py', MM2_val, "mm_struct"],
+                ['subquery.py', VM_file_val, "vm_file"],
+                [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result),
+    statistics(real_time, [End|_]),
+
+    log("profile.txt", "vm_start", VM_start_addr, Base_addr),
+    log("profile.txt", "vm_end", VM_end_addr, Base_addr),
+    log("profile.txt", "vm_next", VM_next_addr, Base_addr),
+    log("profile.txt", "vm_flag", VM_flag_addr, Base_addr),
+    log("profile.txt", "vm_pgoff", VM_pgoff_addr, Base_addr),
+    log("profile.txt", "vm_file", VM_file_addr, Base_addr),
+    log("profile.txt", "vm_area_struct time", End, Start).
+
+check_vm_area_struct(Base_addr, Level) :-
+    process_create(path('python'),
+                    ['subquery.py', Base_addr, "vm_area_struct", Level],
+                    [stdout(pipe(In))]),
+    print(In),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+possible_vm_file(Base_addr) :-
+    pointer(Ptr),
+    long(Ulg),
+    Ptr_profile = [
+        [Vfs_mount_addr, Vfs_mount_val],
+        [Dentry_addr, Dentry_val]
+    ],
+    Vfs_mount_addr #> Base_addr,
+    Dentry_addr #= Vfs_mount_addr + 8,
+    Dentry_addr #< Base_addr + 40,
+    tuples_in(Ptr_profile, Ptr),
+    label([Vfs_mount_val, Dentry_val]),
+    Vfs_mount_val #>0,
+    Dentry_val #> 0,
+    %FIXME seems like we do not need this, make sure the string is not addr=0
+/*
+    process_create(path('python'),
+                    ['subquery.py', Vfs_mount_val, "vfs_mount"],
+                    [stdout(pipe(NewIn))]),
+    read_string(NewIn, Len, X),
+    string_codes(X, Result),
+    close(NewIn),
+    isTrue(Result),*/
+    
+    process_create(path('python'),
+                    ['subquery.py', Dentry_val, "dentry"],
                     [stdout(pipe(In))]),
     read_string(In, Len, X),
     string_codes(X, Result),
     close(In),
     isTrue(Result).
 
-query_list_head(Tasks_val, Comm_offset, Tasks_offset) :-
+possible_vfs_mount(Base_addr) :-
+    pointer(Ptr),
+    Ptr_profile = [
+        [Dentry_addr, Dentry_val]
+    ],
+    Dentry_addr #< Base_addr + 16,
+    tuples_in(Ptr_profile, Ptr),
+    label([Dentry_val]),
+    Dentry_val #> 0,
+    process_create(path('python'),
+                    ['subquery.py', Dentry_val, "dentry"],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+    
+possible_dentry(Base_addr) :-
+    statistics(real_time, [Start|_]),
+    pointer(Ptr),
+    string_val(Str),
+    Ptr_profile = [
+        [Dparent_addr, Dparent_val],
+        [Dchild_addr, Dchild_val]
+    ],
+    Str_profile = [
+        [Dname_addr, Dname_val]
+    ],
+    %log("profile.txt", "dentry addr", Base_addr, 0),
+    Dparent_addr #> Base_addr,
+    Dname_addr #> 0,
+    Dname_addr #< Base_addr + 200,
+    %Dname_addr #= Base_addr + 160,
+    %FIXME This child rule is not applicable for old kernel version. 
+    %chain([Dparent_addr, Dname_addr, Dchild_addr], #<),
+    %Dchild_addr #< Base_addr + 200,
+    tuples_in(Ptr_profile, Ptr),
+    tuples_in(Str_profile, Str),
+    labeling([enum], [Dparent_addr, Dparent_val, Dname_addr, Dchild_addr, Dchild_val]),
+    Dname_offset #= Dname_addr - Base_addr,
+    integer(Dname_offset),
+    Dparent_val #> 0,
+    
+    %FIXME d_parent may not be initialized
+    /*process_create(path('python'),
+                ['subquery.py', Dparent_val, "d_entry", Dname_offset],
+                [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result),*/
+
+    %FIXME: may need to find another way for all list_head. 
+    /*Dchild_offset #= Dchild_addr - Base_addr,
+    integer(Dchild_offset),
+    Dchild_base #= Dchild_val - Dchild_offset,
+    integer(Dchild_base),
+    Dchild_base #> 0,
+    process_create(path('python'),
+                ['subquery.py', Dchild_base, "d_entry", Dname_offset],
+                [stdout(pipe(NewIn))]),
+    read_string(NewIn, Len, X),
+    string_codes(X, Result),
+    close(NewIn),
+    isTrue(Result),*/
+    log("profile.txt", "d_iname", Dname_addr, Base_addr),
+    statistics(real_time, [End|_]).
+/*
+    log("profile.txt", "d_iname", Dname_addr, Base_addr),
+    log("profile.txt", "d_parent", Dparent_addr, Base_addr),
+    log("profile.txt", "d_child", Dchild_addr, Base_addr),
+    log("profile.txt", "dentry time", End, Start).
+*/
+possible_d_entry(Base_addr, Dname_offset) :-
+    current_predicate(string_val/1),
+    string_val(Str),
+    Str_profile = [
+        [Dname_addr, Dname_val]
+    ],
+    Dname_addr #= Base_addr + Dname_offset,
+    tuples_in(Str_profile, Str),
+    label([Dname_addr]).
+
+possible_list_head(Tasks_val, Comm_offset, Tasks_offset) :-
+    string_val(Str),
+    pointer(Ptr),
+    Ptr_profile = [
+        [Tasks_val, Tasks_addr]
+    ],
+    Str_profile = [
+        [Comm_addr, Comm_val]
+    ],
+    Comm_addr #= Tasks_val - Tasks_offset + Comm_offset,
+    Tasks_addr #\= Tasks_val,
+    tuples_in(Str_profile, Str),
+    tuples_in(Ptr_profile, Ptr),
+    label([Comm_addr]).
+
+possible_ts(Base_addr, Comm_offset, Tasks_offset) :-
+    string_val(Str),
+    pointer(Ptr),
+    Ptr_profile = [
+        [Tasks_addr, Tasks_val]
+    ],
+    Str_profile = [
+        [Comm_addr, Comm_val]
+    ],
+
+    Comm_addr #= Base_addr + Comm_offset,
+    Tasks_addr #= Base_addr + Tasks_offset,
+    tuples_in(Ptr_profile, Ptr),
+    tuples_in(Str_profile, Str),
+
+    label([Tasks_val]),
+    
     process_create(path('python'),
                     ['subquery.py', Tasks_val, "list_head", Comm_offset, Tasks_offset],
                     [stdout(pipe(In))]),
@@ -1662,34 +1862,83 @@ query_list_head(Tasks_val, Comm_offset, Tasks_offset) :-
     close(In),
     isTrue(Result).
 
-query_ts(Base_addr, Comm_offset, Tasks_offset) :-
-    process_create(path('python'),
-                    ['subquery.py', Base_addr, "ts", Comm_offset, Tasks_offset],
-                    [stdout(pipe(In))]),
-    read_string(In, Len, X),
-    string_codes(X, Result),
-    close(In),
-    isTrue(Result).
+possible_cred(Base_addr) :-
+    statistics(real_time, [Start|_]),
 
-query_cred(Base_addr) :-
-    process_create(path('python'),
-                    ['subquery.py', Base_addr, "cred"],
-                    [stdout(pipe(In))]),
-    read_string(In, Len, X),
-    string_codes(X, Result),
-    close(In),
-    isTrue(Result).
-query_fs_struct(Base_addr) :-
-    process_create(path('python'),
-                    ['subquery.py', Base_addr, "fs_struct"],
-                    [stdout(pipe(In))]),
-    read_string(In, Len, X),
-    string_codes(X, Result),
-    close(In),
-    isTrue(Result).
+    int(Int),
+    long(Ulg),
+    Int_profile = [
+        [Addr1, Val1],
+        [Addr2, Val2],
+        [Addr3, Val3],
+        [Addr4, Val4],
+        [Addr5, Val5],
+        [Addr6, Val6],
+        [Addr7, Val7],
+        [Addr8, Val8],
+        [Addr9, Val9]
+    ],
+    %FIXME For now, this rule is hard-coded because we do not consider 0 as a unsign long number. 
+    %So that for cred whos val10 is 0, this rule does not apply.
+    /*Ulong_profile = [
+        [Addr10, Val10],
+        [Addr11, Val11]
+    ],*/
+    Addr1 #> Base_addr,
+    %chain([Addr1, Addr2, Addr3, Addr4, Addr5, Addr6, Addr7, Addr8, Addr9, Addr10, Addr11], #<),
+    chain([Addr1, Addr2, Addr3, Addr4, Addr5, Addr6, Addr7, Addr8, Addr9], #<),
+    Addr1 #= Base_addr + 4,
+    Addr9 #= Addr1 + 32,
+    %Addr11 #< Base_addr + 120,
+    tuples_in(Int_profile, Int),
+    %tuples_in(Ulong_profile, Ulg),
+    statistics(real_time, [End|_]),
+    labeling([enum], [Addr1, Addr2, Addr5, Addr6]),
+    log("profile.txt", "cred time", End, Start),
+    log('profile.txt', "uid", Addr1, Base_addr),
+    log('profile.txt', "gid", Addr2, Base_addr),
+    log('profile.txt', "euid", Addr5, Base_addr),
+    log('profile.txt', "egid", Addr6, Base_addr).
 
-print_nl(Name, Content):- 
-    print(Name),
-    print(':'),
-    print(Content),
-    nl.
+possible_fs_struct(Base_addr) :-
+    statistics(real_time, [Start|_]),
+    int(Int),
+    pointer(Ptr),
+    Int_profile = [
+        [Addr1, Val1],
+        [Addr2, Val2],
+        [Addr3, Val3]
+    ],
+    Ptr_profile = [
+        [Root_addr, Root_val],
+        [PWD_addr, PWD_val]
+    ],
+    Addr1 #>= Base_addr,
+    chain([Addr1, Addr2, Addr3, Root_addr, PWD_addr], #<),
+    PWD_addr #= Root_addr + 16,
+    PWD_addr #< Base_addr + 50,
+    tuples_in(Int_profile, Int),
+    tuples_in(Ptr_profile, Ptr),
+    label([Root_addr, Root_val]),
+    
+    process_create(path('python'),
+                    ['subquery.py', Root_val, "dentry"],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result),
+
+    label([PWD_addr, PWD_val]),
+    process_create(path('python'),
+                    ['subquery.py', PWD_val, "dentry"],
+                    [stdout(pipe(NewIn))]),
+    read_string(NewIn, Len, X),
+    string_codes(X, Result),
+    close(NewIn),
+    isTrue(Result),
+
+    statistics(real_time, [End|_]),
+    log("profile.txt", "fs time", End, Start),
+    log('profile.txt', "Root", Root_addr, Base_addr),
+    log('profile.txt', "pwd", PWD_addr, Base_addr).

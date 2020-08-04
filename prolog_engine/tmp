@@ -1,0 +1,19 @@
+cannot find dtb_vaddr
+[-] init_task_from_system_map: 0xffffffff82613780, init_top_pgt_from_system_map: 0xffffffff8260a000
+0xffffffff8260a000 0xffffffff82613780
+found swapper 0x15c0968
+2020-08-03 22:59:15	construct kb
+2020-08-03 22:59:15	start query
+cannot find dtb_vaddr
+[-] init_task_from_system_map: 0xffffffff82613780, init_top_pgt_from_system_map: 0xffffffff8260a000
+0xffffffff8260a000 0xffffffff82613780
+found swapper 0x15c0968
+2020-08-03 22:59:15	finish kb
+'tasks offset':504
+'mm offset':592
+'comm offset':1192
+real_parent:768
+group_leader:816
+"Finished, total time":37.414961099624634
+count result: 1
+/home/zhenxiao/images/lede-4.4.50.bin

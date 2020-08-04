@@ -26,7 +26,6 @@ dentry
 d_iname ['56', '64']  56 correct
 d_parent ['16', '24'] 24 correct
 d_child ['112', '128', '160', '144', '136', '152'] 144 correct
-[128, 144, 160]
 
 cred
 uid ['4', '8', '12']  first is correct

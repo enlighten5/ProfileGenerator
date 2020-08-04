@@ -1,6 +1,5 @@
 % use_module(library(clpfd)).
 :- style_check(-singleton).
-:- table(isTrue).
 
 
 isTrue([X, Y]):-
