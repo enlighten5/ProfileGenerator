@@ -22,19 +22,20 @@ An automated solution to generate profile for memory forensic and virtual machin
 
 ### Test image
 
-This tool is tested on several Debian and Ubuntu systems, with Linux kernel from 2.6 to 4.10. 
+This tool is tested on several Debian and Ubuntu systems, with Linux kernel from 2.6 to 5.4. 
 
-One test image (Ubuntu 16.04 LTS) and System.map file can be found here:     
-`$ wget https://cluster.hpcc.ucr.edu/~zqi020/image/4.11.bin`    
-`$ wget https://cluster.hpcc.ucr.edu/~zqi020/image/System.map-4.11` 
+
+One test image (lede-4.4.50.bin) can be found here:
+`$ wget https://cluster.hpcc.ucr.edu/~zqi020/image/lede-4.4.50.bin`
+
 
 ### Run it    
 `$ cd prolog_engine`    
-`$ python prolog_query.py /PATH/TO/TEST/IMAGE /PATH/TO/SYSTEM.MAP`    
+`$ python prolog_query.py /PATH/TO/TEST/IMAGE`    
 
-* For the current implementation, it requires the System.map file to compute the KASLR shift and address of init_task.
+* The output is saved in `profile.txt`, run `python aggregrate.py` to parse the profile. 
 
-* The program times out after 10 minutes and saves the generated profile. Then it can be exited by `Ctrl-c`
+* To create a Volatility profile, simple replace the generated fields in a existing profile. This can be done automatically in the future. 
 
 ## Features    
 * Auto-locate kernel page table. 
