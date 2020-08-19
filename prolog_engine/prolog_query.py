@@ -78,11 +78,11 @@ def generate_result():
 
 def test():
     prolog_query = PrologQuery(sys.argv[1])
-    prolog_query.find_string("kthreadd")
+    #prolog_query.find_string("kthreadd")
     #openwrt
     #prolog_query.find_tasks(0x7040f78-3000)
     #lede
-    #prolog_query.find_tasks(0x7058e78-3000)
+    prolog_query.find_tasks(0x7058e68-3000)
     #prolog_query.find_tasks(0xed30ee0-3000)
     
 
@@ -107,10 +107,13 @@ def main():
     #paddr = 0x4018af8-1656
     paddr = 0x1ed8c900 - 1984
     paddr = prolog_query.find_swapper_page()
+    print paddr
     #openwrt
     paddr = 0x1c10480
     #lede
     paddr = 0x15c04c0
+    paddr = prolog_query.vtop(0xffffffff872104c0)
+    paddr = 0x1c2349d8 - 2584
     #goldfish
     #paddr = 0x1e114a0
 

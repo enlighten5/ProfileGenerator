@@ -1,7 +1,8 @@
 import mmap, struct, os, sys
 from time import gmtime, strftime
 import LinuxMemory as linux
-
+# debian_x64
+# lububntu_x64
 offset = [
     (0, 1208, 655360),
     (655360, 656568, 65536),
@@ -9,7 +10,8 @@ offset = [
     (4244635648, 536806584, 16777216),
     (4294705152, 553583800, 262144)
 ]
-
+# 4.11 4.15 4.16 4.19 4.20
+# centos 8 
 offset2 = [ 
     (0, 400, 816),
     (0, 1216, 655360),
@@ -18,6 +20,7 @@ offset2 = [
     (4244635648, 536806592, 16777216),
     (4294705152, 553583808, 262144)
 ]
+# cenos7
 offset3 = [
     (0, 400, 816),
     (0, 1216, 655360),
@@ -35,6 +38,7 @@ offset4 = [
     (4294705152, 285082760, 262144)
 ]
 # lede-4.4.50
+# openwrt
 offset5 = [
     (0, 344, 816),
     (0, 1160, 655360),
@@ -63,10 +67,11 @@ class AddressSpace(linux.AMD64PagedMemory):
         except:
             print "Error mmap\n"
             sys.exit(1)
-        self.verbose = 0
-        #offset2: lubuntu20 centos8 4.12 4.13 4.14 4.18 5.3
-        #offset3:
-        #offset4: 
+        self.verbose = 2
+        #offset: debian_x64 lububntu_x64
+        #offset2: lubuntu20 centos8 4.11 4.12 4.13 4.14 4.15 4.16 4.18 4.19 4.20 5.3    
+        #offset3: cenos7
+        #offset4: centos6
         self.offset = offset6
         self.mem_path = mem_path
         self.mem.seek(0)
@@ -287,6 +292,32 @@ class AddressSpace(linux.AMD64PagedMemory):
         if self.dtb == 0:
             print "fail to find dtb.\n"
         return 0
+    def find_pointer(self):
+        #for step in range(0, self.mem.size(), 4096):
+        for step in range(0x1479600, 0x1479600 + 4096, 4096):
+
+            page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
+            if not page:
+                continue
+            value = self.v(4096, page)
+            print page
+            print value
+            if "swapper_pg_dir" in page:
+                #print page
+                print "found swapper in page"
+            for item in range(len(value)):
+                str_content = page[item*8:(item+1)*8]
+                number = value[item]
+                if number == 0xffffffff81605000:
+                    print "found _stext at", hex(step + item*8)
+                if "ffffffff81605000" in page[(item-2)*8:(item+2)*8]:
+                    print "found pointer"
+                    print page[(item-4)*8:(item+2)*8]
+                    print "addr", hex(step + item*8)
+                if "SYMBOL" in str_content:
+                    pass
+                    #print "found string at", hex(step + item*8), page[item*8:(item+2)*8]
+
 
     def extract_info(self, paddr, output, size = 4096):
         valid_pointer = {}
@@ -296,6 +327,7 @@ class AddressSpace(linux.AMD64PagedMemory):
         unknown_pointer = {}
         content = self.read_memory(paddr, size)
         if not content:
+            print "no available content"
             return -1
         value = struct.unpack("<512Q", content)
         # There may be some potential issues about identifying long and int
@@ -528,16 +560,20 @@ class AddressSpace(linux.AMD64PagedMemory):
             
         print "[-] Error: Swapper page not found"
         exit(0)
-
+    # This function is to find the address of target process name
     def find_string(self, target):
+        '''
+        This function is to find the address of the target process name in the memory.
+        It is used to facilitate find_tasks method.
+        '''
         for step in range(0, self.mem.size(), 4096):
             page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
             if not page:
                 continue
             for idx in range(0, 4096, 8):
                 #print hex(step+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
-                if target in page[idx-16:idx+16]:
-                    print "found ", target, hex(step+idx), page[idx-16:idx+16]
+                if target in page[idx:idx+16]:
+                    print "found ", target, hex(step+idx), page[idx:idx+16]
                     #for tmpidx in range(0, 4096, 8):
                     #    print hex(step+tmpidx), hex(self.is_user_pointer(page[tmpidx:tmpidx+8], 0))
                     #return step
@@ -550,8 +586,18 @@ class AddressSpace(linux.AMD64PagedMemory):
             print hex(0x15c0000+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
         '''
         exit(0)
-
+    # This function is to find the init address of task structure. 
+    # It starts from kthread and use the property of parent structure, which is swapper structure. 
     def find_tasks(self, addr):
+        '''
+        This function is to find the address of the global symbol `init_task`.
+        At this point, we do not know the start address of a task structure, the only thing we know is the location of process name field (comm).
+        Another helpful information we can use is that there is a parent field above comm that points to the init address of another task structure. 
+        We first gues the location of initial address of a task struct A, and we know the comm location B, then we can have the gap B-A. 
+        If there is a pointer between A and B, which points to a location where there is a string value at the same gap B-A, then we know A is a correct initial
+        address of a task structure. 
+        It starts from `kthread` process, which is in the first argument. 
+        '''
         page = self.read_memory(addr, 0x200 * 8)
         value = struct.unpack("<512Q", page)
         
@@ -586,7 +632,167 @@ class AddressSpace(linux.AMD64PagedMemory):
                         #if self.verbose:
                         print "found next task at", comm , hex(addr + item * 8)
                 '''        
+    def v(self, size, content):
+        s = "<" + str(size/8) + "Q"
+        value = struct.unpack(s, content)
+        return value
 
+    def ispointer(self, pointer_v):
+        if self.vtop(pointer_v):
+            return 1
+        else:
+            return 0
+
+    def isstring(self, str_content):
+        if all( ord(c) >= 45 and ord(c) <= 122 or ord(c)==0 for c in str_content):
+            if len(str_content.replace('\x00', '')) > 4:
+                return 1
+        return 0
+    
+    def find_modules(self, addr = 0):
+        '''
+        This function is to locate the golbal symbol 'modules'. It first starts from a random kernel module 
+        that is very likely to be loaded and identifies its location in the memory as well as the next and prev pointers in that module structure.
+        Then it traverse the module list until reaching the first one in the double linked list. 
+        We rely on the following evidence to find the top one in the list:
+                                         | module_struct |     | module_struct |
+            global symbol `modules` -->  | next          | --> | next          |
+                                         | prev          |     | prev          |
+                                         | module name   |     | module name   |
+
+            The prev of the first element points to the global symbol module, and it does not have a string value (module name) below.  
+            In other words, it prev points to a location where there is a string value below, then it is not the first element. 
+
+        Based on the above information, we can locate the global symbol `modules` in the memory. 
+        Then we just find its virtual address and put it in the profile. 
+    
+        '''
+        self.log("start searching")
+        for step in range(addr, self.mem.size(), 4096):
+            page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
+            if not page:
+                continue
+            #value = struct.unpack("<512Q", page)
+            prev_ = 0
+            next_ = 0
+            last_next = 1
+            last_prev = 0
+            target_v = 1
+            module_v = 0
+            found = 0
+            # We start from a random kernel module that is very likely to be loaded. 
+            module_name = "binfmt"
+            value = self.v(4096, page)
+            for item in range(len(value)):
+                str_content = page[item*8:(item+1)*8]
+                number = value[item]
+                if "ipv6head" in str_content:
+                #if self.isstring(str_content):
+                    prev_ = value[item-1]
+                    next_ = value[item-2]
+
+                    if prev_ == next_:
+                        continue
+                    if not self.vtop(prev_) or not self.vtop(next_):
+                        continue
+                    #print "found ", str_content, hex(prev_), hex(next_), hex(step + item*8)
+                    
+
+                    last_next = self.read_memory(self.vtop(prev_), 0x8)
+                    if not last_next or not len(last_next) == 8:
+                        continue
+                    last_next_v = self.v(8, last_next)[0]
+                    target = self.read_memory(self.vtop(last_next_v), 8)
+                    if not target or not len(target) == 8:
+                        continue
+                    target_v = self.v(8, target)[0]
+                    #print "prev_", hex(prev_), self.vtop(prev_), "next", hex(next_), self.vtop(next_), "module", hex(module_v), "target", hex(target_v), str_content, hex(step+item*8)
+                    module_name = str_content
+                    if target_v == next_:
+                        found = 1
+                    else:
+                        found = 0
+                    break
+            if found:
+                while self.isstring(module_name):
+                    print "found new module", module_name
+                    next_ = self.read_memory(self.vtop(prev_), 8)
+                    if not next_:
+                        break
+                    next_ = self.v(8, next_)[0]
+                    module_name = self.read_memory(self.vtop(prev_)+16, 8)
+                    prev_ = self.read_memory(self.vtop(prev_)+8, 8)
+                    if not prev_:
+                        break
+                    prev_ = self.v(8, prev_)[0]
+
+                    last_next = self.read_memory(self.vtop(prev_), 0x8)
+                    if not last_next or not len(last_next) == 8:
+                        continue
+                    last_next_v = self.v(8, last_next)[0]
+                    target = self.read_memory(self.vtop(last_next_v), 8)
+                    if not target or not len(target) == 8:
+                        continue
+                    target_v = self.v(8, target)[0]
+                
+
+                if target_v == next_ and target_v > 0xffffffff00000000:
+                    print "found modlues", hex(target_v), hex(module_v), hex(prev_)
+                    #break
+                    modules = 0
+                    for step in range(0, self.mem.size(), 4096):
+                        page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
+                        if not page:
+                            continue
+                        value = self.v(4096, page)
+                        for item in range(len(value)):
+                            number = value[item]
+                            if number == target_v:
+                                if self.isstring(page[(item+1)*8:(item+2)*8]):
+                                    continue
+                                print "found global symbol at", hex(step + item*8), hex(number), hex(target_v)
+                                modules = step + item*8
+                    
+                    for step in range(0x0, 0xf0000000, 4096):
+                        vaddr = step + 0xffffffff00000000
+                        paddr = self.vtop(vaddr)
+                        if paddr == modules & 0xffffffffff000:
+                            print "found vaddr", hex(vaddr), hex(vaddr + (modules & 0xfff))
+                            self.log("Finish searching")
+
+                        pass
+        
+        if not found:
+            return
+        print "the first module is at", hex(target_v)
+        if target_v == 1:
+            return
+        
+        # To find the golbal symbol modules, we need to search in the memory to find the location which contains target_v
+        modules = 0
+        for step in range(0, self.mem.size(), 4096):
+            page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
+            if not page:
+                continue
+            value = self.v(4096, page)
+            for item in range(len(value)):
+                number = value[item]
+                if number == target_v:
+                    if self.isstring(page[(item+1)*8:(item+2)*8]):
+                        continue
+                    print "found global symbol at", hex(step + item*8), hex(number), hex(target_v)
+                    modules = step + item*8
+
+        print (self.vtop(0xffffffff9e288ef0) == modules)
+        
+        for step in range(0x0, 0xf0000000, 4096):
+            vaddr = step + 0xffffffff00000000
+            paddr = self.vtop(vaddr)
+            if paddr == modules & 0xffffffffff000:
+                print "found vaddr", hex(vaddr), hex(vaddr + (modules & 0xfff))
+                self.log("Finish searching")
+
+            pass
 
     def find_comm(self):
         # This function wants to find whether the shuffled offsets in task structure 
@@ -738,13 +944,32 @@ def main():
     #print paddr
     #paddr = 384804864
     #print paddr
-    addr_space.extract_info(paddr, "./tmp")
+    #addr_space.extract_info(paddr, "./tmp")
     #addr_space.find_comm()
     #addr_space.parse_system_map('/home/zhenxiao/ProfileGenerator/volatility/volatility/plugins/overlays/linux/413/boot/System.map-4.13.0-041300-generic')
-    #print addr_space.read_memory(paddr+2608, 8)
-    #addr_space.extract_info(376393600, "./tmp")
+    paddr = addr_space.read_memory(0x15c04c0 + 784, 8)
+    paddr = addr_space.vtop(0xffffffffc0168580)
+    #paddr = addr_space.vtop(0xffffffff9e288ef0)
+    paddr = addr_space.vtop(0xffffffff81479600)
+    print hex(paddr)
+    '''
+    tmp = addr_space.read_memory(paddr, 8)
+    if not tmp:
+        print "error"
+        return
+    paddr = addr_space.v(8, tmp)[0]
+    paddr = addr_space.vtop(0xffffffff81c336f0)
+    paddr = addr_space.vtop(0xffffffff81ed67c0)
+    '''
+    addr_space.extract_info(paddr, "./tmp")
+    #addr_space.find_modules()
+    #addr_space.find_pointer()
+    #print hex(paddr)
     #addr_space.extract_info(467322696, "./tmp")
     # 0x1bdab208 this should be where the *next pointer points to. so this is the value in the field *next
+
+    #addr_space.find_string("kthreadd")
+    #addr_space.find_tasks(0x1c2349d8-3000)
 
     
     
@@ -752,4 +977,7 @@ def main():
     pass
 
 if __name__ == "__main__":
+    s = '\xe9\xee\x00\x00\x07\x1F\xFE\x72\x74\xA2\x33\x32\x04\x54\x5f\x74'
+    s = '\x04\x54'
+    print s
     main()

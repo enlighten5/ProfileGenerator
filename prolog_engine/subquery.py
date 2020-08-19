@@ -13,7 +13,7 @@ class SubQuery(pq.PrologQuery):
     def __init__(self):
         # TODO: inherit prologquery without provides image path as a parameter
         # Replace the parameter with the path to memory dump
-        mem_dump = "/home/zhenxiao/images/lede-4.4.50.bin"
+        mem_dump = "/home/zhenxiao/images/4.12.bin"
         #mem_dump = os.environ["IMAGE_PATH"]
         if not mem_dump:
             print "[-] Error: please provide image path"

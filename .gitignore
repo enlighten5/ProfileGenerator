@@ -1,10 +1,10 @@
-*.pyc
+**.pyc
 .vscode/
 final_profile
-*.txt
+**.txt
 *dtb
 *_offset
 volatility/
-script/fs_struct
+script/*
 script/task_struct
 profile*

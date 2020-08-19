@@ -79,6 +79,8 @@ query_task_struct(Base_addr) :-
     Real_parent_addr #= Parent_addr - 8,
     Child_addr #= Parent_addr + 8,
     %FIXME This may be too strong
+    %Children next and prev 16 
+    %Sibling next and prev  16
     Group_leader_addr #=< Child_addr +32,
     Cred_addr #= Real_cred_addr + 8,
     /*MM2_addr #= Base_addr + 1160,
@@ -106,10 +108,11 @@ query_task_struct(Base_addr) :-
     Tasks_val #> 0,
     query_list_head(Tasks_val, Comm_offset, Tasks_offset),
 
-    labeling([enum], [Real_parent_addr, Real_parent_val, Group_leader_addr, Group_leader_val]),
+    labeling([enum], [Real_parent_addr, Real_parent_val, Group_leader_addr, Group_leader_val, Child_addr, Child_val]),
     Real_parent_val #> 0,
     Group_leader_val #> 0,
     query_ts(Real_parent_val, Comm_offset, Tasks_offset),
+    %query_list_head(Child_val-16, Comm_offset, Tasks_offset),
     query_ts(Group_leader_val, Comm_offset, Tasks_offset),
 
     labeling([enum], [Real_cred_addr, Real_cred_val, Cred_addr, Cred_val]),
@@ -129,7 +132,7 @@ query_task_struct(Base_addr) :-
     Real_parent_offset #= Real_parent_addr - Base_addr,
     Group_leader_offset #= Group_leader_addr - Base_addr,
     log("profile.txt", "tasks", Tasks_addr, Base_addr),
-    log("profile.txt", "mm_struct", MM2_addr, Base_addr),
+    log("profile.txt", "active_mm_struct", MM2_addr, Base_addr),
     log("profile.txt", "comm", Comm_addr, Base_addr),
     log("profile.txt", "parent", Parent_addr, Base_addr),
     log("profile.txt", "group_leader", Group_leader_addr, Base_addr),
