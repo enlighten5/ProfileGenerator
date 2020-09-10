@@ -78,11 +78,11 @@ def generate_result():
 
 def test():
     prolog_query = PrologQuery(sys.argv[1])
-    #prolog_query.find_string("kthreadd")
+    prolog_query.find_string("kthreadd")
     #openwrt
     #prolog_query.find_tasks(0x7040f78-3000)
     #lede
-    prolog_query.find_tasks(0x7058e68-3000)
+    #prolog_query.find_tasks(0x7058e68-3000)
     #prolog_query.find_tasks(0xed30ee0-3000)
     
 
@@ -150,7 +150,7 @@ def main():
     #prolog_query.start_query(0x9413740)
 
 if __name__ == "__main__":
-    main()
-    #test()
+    #main()
+    test()
 
         

@@ -8,3 +8,7 @@ volatility/
 script/*
 script/task_struct
 profile*
+*symbol_table
+index*
+names*
+table*
