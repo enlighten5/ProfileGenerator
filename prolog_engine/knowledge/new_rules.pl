@@ -1,3 +1,4 @@
+/* This file contains recursive predicates */
 :- use_module(library(clpfd)).
 :- use_module(reif).
 :- style_check(-singleton).
@@ -109,6 +110,100 @@ possible_task_struct(Base_addr) :-
     print_nl('real_parent', Real_parent_offset),
     print_nl('group_leader', Group_leader_offset),
     print_nl("Finished, total time", Time_past).
+
+possible_string_pointer(Base_addr) :-
+    /* Verify if this pointer points to a stirng */
+    string_val(Str),
+    Str_profile = [
+        [Name_addr, Name_val]
+    ],
+    tuples_in(Str_profile, Str),
+    Name_addr #= Base_addr.
+
+query_string_pointer(Val) :- 
+    process_create(path('python'),
+                    ['subquery.py', Val, "string_pointer"],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+possible_mount_struct(Base_addr, Offset) :-
+    pointer(Ptr),
+    Ptr_profile = ([
+        [Mnt_devname_addr, Mnt_devname_val]
+    ]),
+    tuples_in(Ptr_profile, Ptr),
+    Mnt_devname_addr #= Base_addr + Offset,
+    labeling([enum], [Mnt_devname_addr, Mnt_devname_val]),
+    query_string_pointer(Mnt_devname_val).
+
+
+
+possible_kernel_param(Base_addr) :-
+    string_val(Str),
+    Str_profile = [
+        [Name_addr, Name_val]
+    ],
+    tuples_in(Str_profile, Str),
+    Name_addr #= Base_addr.
+
+possible_in_device(Base_addr) :-
+    /* in_ifaddr remains the same across kernel versions 
+       but we need this query to find ip_ptr in net_device struct
+    */
+    /*
+        struct net_device *dev;
+        int               refcnt;
+        int               dead;
+        struct in_ifaddr  *ifa_list;
+    */
+    pointer(Ptr),
+    int(Int),
+    Ptr_profile = ([
+        [Dev_addr, Dev_val],
+        [Ifa_list_addr, Ifa_list_val]
+    ]),
+    Int_profile = ([
+        [Refcnt_addr, Refcnt_val],
+        [Dead_addr, Dead_val]
+    ]),
+    tuples_in(Ptr_profile, Ptr),
+    tuples_in(Int_profile, Int),
+    Dead_addr #= Refcnt_addr + 4,
+    chain([Dev_addr, Refcnt_addr, Dead_addr, Ifa_list_addr], #<),
+    Dev_addr #= Base_addr,
+    Ifa_list_addr #= Base_addr + 16,
+    labeling([enum], [Ifa_list_addr, Ifa_list_val]),
+
+    process_create(path('python'),
+                    ['subquery.py', Ifa_list_val, "in_ifaddr"],
+                    [stdout(pipe(In))]),
+    print(In),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+possible_in_ifaddr(Base_addr) :-
+    /* in_ifaddr remains the same across kernel versions */
+    pointer(Ptr),
+    Ptr_profile = ([
+        [Hash_addr, Hash_val],
+        [Ifa_next_addr, Ifa_next_val],
+        [Ifa_dev_addr, Ifa_dev_val],
+        [Rcu_head_addr, Rcu_head_val]
+    ]),
+    tuples_in(Ptr_profile, Ptr),
+    chain([Hash_addr, Ifa_next_addr, Ifa_dev_addr, Rcu_head_addr], #<),
+    Hash_addr #= Base_addr,
+    Ifa_next_addr #= Hash_addr + 16,
+    Ifa_dev_addr #= Ifa_next_addr + 8,
+    Rcu_head_addr #= Ifa_dev_addr + 8,
+    labeling([enum], [Hash_addr, Ifa_next_addr, Ifa_dev_addr, Rcu_head_addr]).
+
+
 
 possible_mm_struct(Current_addr) :- 
     statistics(real_time, [Start|_]),
@@ -284,15 +379,36 @@ possible_vm_file(Base_addr) :-
     close(In),
     isTrue(Result).
 
+possible_name_pointer(Val, Name_offset) :-
+    /* The value at val+name_offset is a string pointer */
+    current_predicate(pointer/1),
+    pointer(Ptr),
+    Ptr_profile = ([
+        [Name_addr, Name_val]
+    ]),
+    Name_addr #= Val + Name_offset,
+    tuples_in(Ptr_profile, Ptr),
+    labeling([enum], [Name_addr, Name_val]),
+    query_string_pointer(Name_val).
+
 possible_vfs_mount(Base_addr) :-
     pointer(Ptr),
+    int(Int),
     Ptr_profile = [
         [Dentry_addr, Dentry_val]
     ],
-    Dentry_addr #< Base_addr + 16,
+    Int_profile = [
+        [Mnt_flags_addr, Mnt_flags_val]
+    ],
+    
     tuples_in(Ptr_profile, Ptr),
-    label([Dentry_val]),
+    tuples_in(Int_profile, Int),
+    Dentry_addr #= Base_addr,
     Dentry_val #> 0,
+    Mnt_flags_addr #= Dentry_addr + 16,
+    Mnt_flags_val #>= 0,
+    label([Dentry_addr, Dentry_val, Mnt_flags_addr, Mnt_flags_val]).
+/*
     process_create(path('python'),
                     ['subquery.py', Dentry_val, "dentry"],
                     [stdout(pipe(In))]),
@@ -300,18 +416,115 @@ possible_vfs_mount(Base_addr) :-
     string_codes(X, Result),
     close(In),
     isTrue(Result).
-    
+  */  
 possible_dentry(Base_addr) :-
+    /*
+        struct dentry *d_parent;
+        struct qstr d_name -> char *name; it's a name pointer
+        struct inode *d_inode;
+        unsigned char d_iname[LEN];
+        const struct dentry_operations *d_op;
+        struct list_head d_child;
+        struct list_head d_subdirs;
+        union {
+	        struct hlist_node d_alias;
+	        struct rcu_head d_rcu;
+        } d_u;
+    */
+
+    
     statistics(real_time, [Start|_]),
     pointer(Ptr),
     string_val(Str),
     Ptr_profile = [
         [Dparent_addr, Dparent_val],
-        [Dchild_addr, Dchild_val]
+        [Dname_addr, Dname_val],
+        [D_inode_addr, D_inode_val],
+        [D_op_addr, D_op_val],
+        [Dchild_addr, Dchild_val],
+        [D_subdirs_addr, D_subdirs_val]
     ],
     Str_profile = [
-        [Dname_addr, Dname_val]
+        [D_iname_addr, D_iname_val]
     ],
+    tuples_in(Ptr_profile, Ptr),
+    tuples_in(Str_profile, Str),
+    Dparent_addr #> Base_addr,
+    chain([Dparent_addr, Dname_addr, D_inode_addr, D_iname_addr, 
+            D_op_addr, Dchild_addr, D_subdirs_addr], #<),
+    D_subdirs_addr #= Dchild_addr + 16,
+    D_subdirs_addr #< Base_addr + 200,
+    Dparent_val #> 0,
+    labeling([enum], [Dname_addr, Dname_val]),
+    query_string_pointer(Dname_val),
+    labeling([enum], [D_iname_addr, D_iname_val]),
+    D_iname_offset #= D_iname_addr - Base_addr,
+    Dname_offset #= Dname_addr - Base_addr,
+    labeling([enum], [Dparent_addr, Dparent_val]),
+    Parent_dname #= Dparent_val + Dname_offset,
+    process_create(path('python'),
+                    ['subquery.py', Parent_dname, "name_pointer", Dname_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result),
+
+    labeling([enum], [Dchild_addr, Dchild_val]),
+    Dchild_offset #= Dchild_addr - Base_addr,
+    Dchild_init #= Dchild_val - Dchild_offset,
+    query_name_pointer(Dchild_init, Dname_offset),
+
+    /* This can be hardcoded as d_child_addr + 16 */
+    labeling([enum], [D_subdirs_addr, D_subdirs_val]),
+    Dsubdirs_offset #= D_subdirs_addr - Base_addr,
+    D_subdirs_init #= D_subdirs_val - Dsubdirs_offset,
+    query_name_pointer(D_subdirs_init, Dname_offset),
+
+
+    log("./profile/dentry", "parent", Dparent_addr, Base_addr),
+    log("./profile/dentry", "d_iname", D_iname_addr, Base_addr),
+    log("./profile/dentry", "dchild", Dchild_addr, Base_addr),
+    log("./profile/dentry", "d_subdirs", D_subdirs_addr, Base_addr).
+
+    
+query_name_pointer(Base_addr, Offset) :-
+    process_create(path('python'),
+                    ['subquery.py', Base_addr, "name_pointer", Offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+possible_inode_operations(Base_addr) :-
+    /* a bunch of function pointers. */
+    pointer(Ptr),
+    Ptr_profile = ([
+        [_L1_addr, _L1_val],
+        [_L2_addr, _L2_val],
+        [_L3_addr, _L3_val],
+        [_L4_addr, _L4_val],
+        [_L5_addr, _L5_val],
+        [_L6_addr, _L6_val],
+        [_L7_addr, _L7_val],
+        [_L8_addr, _L8_val],
+        [_L9_addr, _L9_val],
+        [_L10_addr, _L10_val],
+        [_L11_addr, _L11_val],
+        [_L12_addr, _L12_val]
+    ]),
+    tuples_in(Ptr_profile, Ptr),
+    chain([_L1_addr, _L2_addr, _L3_addr, _L4_addr, _L5_addr, _L6_addr, _L7_addr,
+           _L8_addr, _L9_addr, _L10_addr, _L11_addr, _L12_addr], #<),
+    _L1_addr #= Base_addr,
+    _L12_addr #= Base_addr + 88.
+
+
+
+
+possible_nothing() :-
+
     %log("profile.txt", "dentry addr", Base_addr, 0),
     Dparent_addr #> Base_addr,
     Dname_addr #> 0,
@@ -464,6 +677,8 @@ possible_fs_struct(Base_addr) :-
     PWD_addr #< Base_addr + 50,
     tuples_in(Int_profile, Int),
     tuples_in(Ptr_profile, Ptr),
+    Root_val #> 0,
+    PWD_val #> 0,
     label([Root_addr, Root_val]),
     
     process_create(path('python'),

@@ -13,7 +13,9 @@ class SubQuery(pq.PrologQuery):
     def __init__(self):
         # TODO: inherit prologquery without provides image path as a parameter
         # Replace the parameter with the path to memory dump
-        mem_dump = "/home/zhenxiao/images/4.12.bin"
+        #mem_dump = "/home/zhenxiao/images/4.12.bin"
+        mem_dump = "/media/zhenxiao/c9eb3803-fc00-4c78-9b13-c32b203b1bb7/home/zhenxiao/images/4.12.bin"
+
         #mem_dump = os.environ["IMAGE_PATH"]
         if not mem_dump:
             print "[-] Error: please provide image path"
@@ -55,6 +57,7 @@ class SubQuery(pq.PrologQuery):
             print 1
         else:
             print 0
+        #if not query_rule == "dentry":
         os.remove(tmp_name)
 
 def main():

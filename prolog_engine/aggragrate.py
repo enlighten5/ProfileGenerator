@@ -1,4 +1,5 @@
 import program as pg
+import sys
 result = {}
 def main():
     paddr = 0x1605ff8
@@ -14,7 +15,8 @@ def main():
     #extract_info_r("/home/zhenxiao/images/debian_x64.bin", paddr, 2048, "/home/zhenxiao/ProfileGenerator/debian.pl")
     #parse_dwarf("/home/zhenxiao/Desktop/sysmap/debian_2.6/module.dwarf")
     #extract_info("/home/zhenxiao/images/lubuntu_x64_ASLR.bin", 0x11210500, 4096)
-    parse_profile()
+    fname = sys.argv[1]
+    parse_profile(fname)
 
 
     
@@ -61,9 +63,9 @@ def parse_dwarf(file_path):
             line = dwarf.readline()
 
 
-def parse_profile():
+def parse_profile(fname):
     profile = {}
-    with open('profile.txt', 'r') as p:
+    with open(fname, 'r') as p:
         line = p.readline()
         while line:            
             line = line.strip('\n')
