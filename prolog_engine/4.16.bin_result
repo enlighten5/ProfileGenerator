@@ -1,0 +1,22 @@
+Start_addr ['0']
+time ['2']
+Name_addr ['16']
+Child_addr ['56']
+End_addr ['8']
+false positive 0.0 true positive 5.0 precision 1.0
+core_size ['384']
+kp ['184']
+name ['16']
+module ['10']
+list ['0']
+core_text_size ['388']
+core_base ['376']
+time for module 10.0
+false positive 0.0 true positive 6.0 precision 1.0
+dev_list ['80']
+net_device ['4', '7', '9', '14', '19']
+ip_ptr ['768', '824', '952']
+name ['0', '8']
+time for net_device 4.0
+false positive 5.0 true positive 3.0 precision 0.375
+final result: tp: 14.0 fp: 5.0 precision 0.736842105263 time 14.0

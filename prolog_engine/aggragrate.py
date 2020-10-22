@@ -1,5 +1,5 @@
 import program as pg
-import sys
+import sys, os
 result = {}
 def main():
     paddr = 0x1605ff8
@@ -15,8 +15,20 @@ def main():
     #extract_info_r("/home/zhenxiao/images/debian_x64.bin", paddr, 2048, "/home/zhenxiao/ProfileGenerator/debian.pl")
     #parse_dwarf("/home/zhenxiao/Desktop/sysmap/debian_2.6/module.dwarf")
     #extract_info("/home/zhenxiao/images/lubuntu_x64_ASLR.bin", 0x11210500, 4096)
-    fname = sys.argv[1]
-    parse_profile(fname)
+    #fname = sys.argv[1]
+    #parse_profile(fname)
+    result = []
+    tp = 0.0
+    fp = 0.0
+    total_t = 0.0
+    for file_name in os.listdir("./profile"):
+        result.append(parse_profile(file_name))
+    for index in range(len(result)):
+        tp += result[index][0]
+        fp += result[index][1]
+        total_t += result[index][2]
+    print "final result: tp:", tp, "fp:", fp, "precision", tp / (tp + fp), "time", total_t
+
 
 
     
@@ -65,7 +77,7 @@ def parse_dwarf(file_path):
 
 def parse_profile(fname):
     profile = {}
-    with open(fname, 'r') as p:
+    with open("./profile/" + fname, 'r') as p:
         line = p.readline()
         while line:            
             line = line.strip('\n')
@@ -79,9 +91,27 @@ def parse_profile(fname):
                 profile.update({content[0] : [content[1]]})
             line = p.readline()
 
-        keys = profile.keys()
-        for key in keys:
-            print key, profile[key]
+    keys = profile.keys()
+    for key in keys:
+        print key, profile[key]
+    names = os.listdir("./profile/")
+    fp = 0.0
+    tp = 0.0
+    total_t = 0.0
+    for key in keys:
+        if key in fname:
+            #time
+            total_t += float(profile[key][0])
+            print "time for", key, total_t
+        else:
+            if len(profile[key]) > 1:
+                fp += len(profile[key])
+                tp += 1
+            else:
+                tp += 1
+    print "false positive", fp, "true positive", tp, "precision", tp/(tp+fp)
+    print " "
+    return tp, fp, total_t
 
 def is_user_pointer(buf, idx):
     dest = (ord(buf[idx+7]) << 56) + (ord(buf[idx+6]) << 48) + (ord(buf[idx+5]) << 40) + (ord(buf[idx+4]) << 32) + (ord(buf[idx+3]) << 24) + (ord(buf[idx+2]) << 16) + (ord(buf[idx+1]) << 8) + ord(buf[idx])

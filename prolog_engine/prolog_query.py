@@ -2,11 +2,11 @@ import read_mem as rm
 from program import *
 from pyswip.core import *
 from pyswip import *
-import time, mmap
+import time, mmap, struct
 class PrologQuery(rm.AddressSpace):
     def __init__(self, image_path):
         #rm.AddressSpace.__init__(self, image_path, 0x3809000)
-        rm.AddressSpace.__init__(self, image_path, 0)
+        rm.AddressSpace.__init__(self, image_path, 0, 0)
 
     def construct_kb(self, paddr, input_f, output_f):
         #base_addr = paddr & 0xffffffffff000
@@ -42,8 +42,8 @@ class PrologQuery(rm.AddressSpace):
         query_cmd = "query_" + query + "(" + str(paddr) + ")" 
         for s in p.query(query_cmd, catcherrors=False):
             count += 1
-            #if count:
-            #    break
+            if count:
+                break
             #print(s["Base_addr"])
         print "count result:", count
         self.log("finish query \t- " + query)
@@ -151,8 +151,37 @@ def main():
     file_systems -> file_system_type
     neigh_tables -> neigh_table (*)
     '''
-
-    query_cmd = ["init_task", "init_fs", "init_files", "modules", "mount_hashtable", "neigh_tables"]
+    #for modules, read the first pointer at modules
+    #query_cmd = ["init_task", "init_fs", "modules", "mount_hashtable", "neigh_tables", "iomem_resource",
+    #             "tcp4", "udp4", "tty_drivers", "proc_root"]
+    #"idt_table", "module_kset" do not need to infer layouts
+    #query_cmd = ["init_fs"]
+    # pre_4.18
+    if float(prolog_query.version) < 4.18:
+        query_cmd = ["init_task", "init_fs", "modules", "mount_hashtable", "neigh_tables", "iomem_resource",
+                 "tcp4_seq_afinfo", "udp4_seq_afinfo", "tty_drivers", "proc_root"]
+        #query_cmd = ["neigh_tables"]
+        query_object = {"init_task": "task_struct", "init_fs": "fs_struct", "modules": "module", 
+                    "mount_hashtable": "mount_hash",
+                    "neigh_tables": "neigh_table", "iomem_resource": "resource",
+                    "tcp4_seq_afinfo": "tcp_seq_afinfo", "udp4_seq_afinfo": "udp_seq_afinfo",
+                    "tty_drivers": "tty_driver",
+                    "proc_root": "proc_dir_entry",
+                    "idt_table": "gate_struct",
+                    "module_kset": "kset"}
+    # after_4.18
+    elif float(prolog_query.version) >= 4.18:
+        query_cmd = ["init_task", "init_fs", "modules", "mount_hashtable", "neigh_tables", "iomem_resource",
+                 "tcp4_seq_ops", "udp_seq_ops", "tty_drivers", "proc_root"]
+        query_cmd = ["tcp4_seq_ops", "udp_seq_ops", "tty_drivers", "proc_root"]
+        query_object = {"init_task": "task_struct", "init_fs": "fs_struct", "modules": "module", 
+                    "mount_hashtable": "mount_hash",
+                    "neigh_tables": "neigh_table", "iomem_resource": "resource",
+                    "tcp4_seq_ops": "seq_operations", "udp_seq_ops": "seq_operations",
+                    "tty_drivers": "tty_driver",
+                    "proc_root": "proc_dir_entry",
+                    "idt_table": "gate_struct",
+                    "module_kset": "kset"}
     symbol_table = {}
 
     with open(symbol_file, 'r') as symbol:
@@ -162,22 +191,51 @@ def main():
             index = len(line) - index
             #print line[index:]
             if line[index:].strip() in query_cmd:
-                symbol_table[line[index:].strip()] = int(line[:line.find('\t')][:-1], 16) + 0x5400000
+                print "find", line[index:].strip()
+                #Need to add the KASLR shift
+                symbol_table[line[index:].strip()] = int(line[:line.find('\t')][:-1], 16) + prolog_query.shift
             line = symbol.readline()
     for item in symbol_table.keys():
         print item, symbol_table[item], hex(symbol_table[item])
-
+    '''
     #paddr = prolog_query.vtop(0xffffffff81e104c0+0x1c400000)
     #prolog_query.start_query(paddr, "task_struct")
-    paddr = prolog_query.vtop(symbol_table["init_fs"])
-    print "---", paddr
+    paddr = prolog_query.vtop(symbol_table[query])
+    if query == 'modules':
+        addr = prolog_query.read_memory(int(paddr), 8)
+        paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
+
+    #if query == "mount_hashtable":
+
+    print "[-]Retrive {0} from symbol table: paddr: {1}".format(query, hex(paddr))
     #Somehow int() is important, otherwise there would be errors. 
-    prolog_query.start_query(int(paddr), "fs_struct")
-    '''
+    #paddr = prolog_query.vtop(0xffff9f8b94cc8c00)
+    prolog_query.start_query(int(paddr), "init_task")
+    '''    
     for query in query_cmd:
-        paddr = symbol_table[query]
-        prolog_query.start_query(paddr, query)
-    '''
+        paddr = prolog_query.vtop(symbol_table[query])
+        if query == 'modules':
+            addr = prolog_query.read_memory(int(paddr), 8)
+            paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
+        if query == "mount_hashtable":
+            addr = prolog_query.read_memory(int(paddr), 8)
+            paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
+        if query == "neigh_tables":
+            #This works for Linux kernel 3.19 and newer
+            addr = prolog_query.read_memory(int(paddr), 8)
+            paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
+        if query == "tty_drivers":
+            addr = prolog_query.read_memory(int(paddr), 8)
+            paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
+            #tty_driver object remains unchanged. 168 is the object size. 
+            paddr -= 168
+        if query == "idt_table":
+            addr = prolog_query.read_memory(int(paddr), 8)
+            paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
+
+        prolog_query.start_query(int(paddr), query_object[query])
+    #paddr = 0xbf22fa0
+    #prolog_query.start_query(int(paddr), "neigh_table")
     #pid = os.fork()
     #if pid > 0:
         # start_query takes a number (dec or hex) as input, not string

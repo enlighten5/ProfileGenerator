@@ -1,0 +1,75 @@
+gid ['8']
+cred ['0']
+uid ['4']
+egid ['24']
+euid ['20']
+time for cred 0.0
+false positive 0.0 true positive 4.0 precision 1.0
+d_subdirs ['144']
+parent ['24']
+d_iname ['56']
+dchild ['128']
+dentry ['12']
+inode ['-26552']
+time for dentry 12.0
+false positive 0.0 true positive 5.0 precision 1.0
+Start_addr ['_G235925']
+time ['3']
+Name_addr ['16']
+Child_addr ['56']
+End_addr ['8']
+false positive 0.0 true positive 5.0 precision 1.0
+core_size ['384']
+kp ['72', '184']
+name ['16']
+module ['2', '11']
+list ['0']
+core_text_size ['388']
+core_base ['376']
+time for module 2.0
+false positive 2.0 true positive 6.0 precision 0.75
+arg_start ['304']
+pgd ['80']
+brk ['288']
+mmap_base ['32']
+mm_struct ['1']
+mmap ['0']
+start_stack ['296']
+start_brk ['280']
+time for mm_struct 1.0
+false positive 0.0 true positive 7.0 precision 1.0
+dev_list ['80']
+net_device ['4', '11', '17', '23', '10', '16', '9', '14', '19', '3', '8', '13', '18']
+ip_ptr ['768', '952']
+name ['0', '8']
+time for net_device 4.0
+false positive 4.0 true positive 3.0 precision 0.428571428571
+vm_end ['8']
+vm_area_struct ['2']
+vm_start ['0']
+vm_file ['160']
+vm_pgoff ['152']
+vm_next ['16']
+vm_flag ['80', '152']
+time for vm_area_struct 2.0
+false positive 2.0 true positive 6.0 precision 0.75
+mnt_devname ['128']
+mnt_child ['96']
+mnt_hash ['0']
+mnt_parent ['16']
+mount ['9', '12', '8', '11', '10', '14', '13']
+mnt_list ['136']
+time for mount 9.0
+false positive 0.0 true positive 5.0 precision 1.0
+task_struct ['72', '97', '316', '341']
+tasks ['1984', '1992']
+comm ['2672', '2680']
+active_mm_struct ['2072']
+parent ['2264']
+pid ['2236', '2240']
+group_leader ['2304']
+cred ['2656']
+time for task_struct 72.0
+time for cred 2728.0
+false positive 6.0 true positive 6.0 precision 0.5
+final result: tp: 47.0 fp: 14.0 precision 0.770491803279 time 2758.0

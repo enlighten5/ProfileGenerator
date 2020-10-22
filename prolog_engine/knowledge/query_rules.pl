@@ -43,6 +43,7 @@ start_query(Base_addr) :-
     
 
 query_task_struct(Base_addr) :-
+    statistics(real_time, [Start|_]),
     get_time(Current),
     %current_predicate(string_val/1),
     pointer(Ptr),
@@ -58,8 +59,7 @@ query_task_struct(Base_addr) :-
         [Group_leader_addr, Group_leader_val],
         [Thread_group_addr, Thread_group_val],
         [Real_cred_addr, Real_cred_val],
-        [Cred_addr, Cred_val],
-        [FS_struct_addr, FS_struct_val]
+        [Cred_addr, Cred_val]
     ]),
     Str_profile = ([
         [Comm_addr, Comm_val]    
@@ -69,11 +69,11 @@ query_task_struct(Base_addr) :-
         [Tgid_addr, Tgid_val]    
     ]),
     chain([Tasks_addr, MM_addr, MM2_addr, Pid_addr, Tgid_addr, Real_parent_addr, Parent_addr , Child_addr, 
-           Group_leader_addr, Thread_group_addr, Real_cred_addr, Cred_addr, Comm_addr, FS_struct_addr], #<),
+           Group_leader_addr, Thread_group_addr, Real_cred_addr, Cred_addr, Comm_addr], #<),
     %MM2_addr #> Base_addr + 1000,
     MM2_addr #= MM_addr + 8,
     Tasks_addr #> MM2_addr - 100,
-    %FS_struct_addr #< Base_addr + 4000,
+
     Tgid_addr #= Pid_addr + 4,
     Real_parent_addr #< Tgid_addr + 20,
     Real_parent_addr #= Parent_addr - 8,
@@ -86,7 +86,6 @@ query_task_struct(Base_addr) :-
     /*MM2_addr #= Base_addr + 1160,
     Comm_addr #= Base_addr + 1656,
     Tasks_addr #= Base_addr + 1096,*/
-    %FS_struct_addr #= Base_addr + 2640,
 
 
     tuples_in(Ptr_profile, Ptr),
@@ -98,11 +97,9 @@ query_task_struct(Base_addr) :-
     % make query after labeling
     MM2_val #> 0,
     integer(MM2_val),
-    %Is it safe to do this?
-    %query_mm_struct(MM_val),
     query_mm_struct(MM2_val),
     labeling([enum], [Tasks_addr, Tasks_val, Comm_addr, Comm_val, Pid_addr, Tgid_addr]),
-/*
+
     Comm_offset #= Comm_addr - Base_addr,
     Tasks_offset #= Tasks_addr - Base_addr,
     Tasks_val #> 0,
@@ -119,30 +116,26 @@ query_task_struct(Base_addr) :-
     Cred_val #> 0,
     query_cred(Real_cred_val),
     query_cred(Cred_val),
-*/
-/*
-    labeling([enum], [FS_struct_addr, FS_struct_val]),
-    FS_struct_val #> 0,
-    %query_fs_struct(FS_struct_val),
-*/
 
 
-    get_time(End),
-    Time_past is End - Current,
+    get_time(Now),
+    Time_past is Now - Current,
+    statistics(real_time, [End|_]),
+
     MM_offset #= MM2_addr - Base_addr,
     Real_parent_offset #= Real_parent_addr - Base_addr,
     Group_leader_offset #= Group_leader_addr - Base_addr,
-    log("profile.txt", "tasks", Tasks_addr, Base_addr),
-    log("profile.txt", "active_mm_struct", MM2_addr, Base_addr),
-    log("profile.txt", "comm", Comm_addr, Base_addr),
-    log("profile.txt", "parent", Parent_addr, Base_addr),
-    log("profile.txt", "group_leader", Group_leader_addr, Base_addr),
-    log("profile.txt", "cred", Cred_addr, Base_addr),
-    log("profile.txt", "pid", Pid_addr, Base_addr),
+    log("./profile/task_struct", "tasks", Tasks_addr, Base_addr),
+    log("./profile/task_struct", "active_mm_struct", MM2_addr, Base_addr),
+    log("./profile/task_struct", "comm", Comm_addr, Base_addr),
+    log("./profile/task_struct", "parent", Parent_addr, Base_addr),
+    log("./profile/task_struct", "group_leader", Group_leader_addr, Base_addr),
+    log("./profile/task_struct", "cred", Cred_addr, Base_addr),
+    log("./profile/task_struct", "pid", Pid_addr, Base_addr),
+    log("./profile/task_struct", "task_struct", End, Start),
 
-
-    
     print_nl('tasks offset', Tasks_offset),
+    print_nl('tasks offset', Tasks_val),
     print_nl('mm offset', MM_offset),
     print_nl('comm offset', Comm_offset),
     print_nl('real_parent', Real_parent_offset),
@@ -158,7 +151,8 @@ query_module(Base_addr) :-
        unsigned int core_size, init_size;
        unsigned int init_text_size, core_text_size;
     */
-    get_time(Current),
+    %get_time(Current),
+    statistics(real_time, [Start|_]),
     pointer(Ptr),
     string_val(Str),
     int(Int),
@@ -205,86 +199,31 @@ query_module(Base_addr) :-
     labeling([enum], [Core_base_addr, Core_size_addr, 
             Core_text_size_addr, RO_size_addr, RO_init_size_addr]),
 
-    get_time(End),
-    Time_past is End - Current,
-    log("module", "list", List_addr, Base_addr),
-    log("module", "name", Name_addr, Base_addr),
-    log("module", "kp", KP_addr, Base_addr),
-    log("module", "core_base", Core_base_addr, Base_addr),
-    log("module", "core_size", Core_size_addr, Base_addr),
-    log("module", "core_text_size", Core_text_size_addr, Base_addr).
+    %get_time(End),
+    statistics(real_time, [End|_]),
+    %Time_past is End - Current,
+    log("./profile/module", "list", List_addr, Base_addr),
+    log("./profile/module", "name", Name_addr, Base_addr),
+    log("./profile/module", "kp", KP_addr, Base_addr),
+    log("./profile/module", "core_base", Core_base_addr, Base_addr),
+    log("./profile/module", "core_size", Core_size_addr, Base_addr),
+    log("./profile/module", "core_text_size", Core_text_size_addr, Base_addr),
+    log("./profile/module", "module", End, Start).
+    %print_nl("Finished, total time", Time_past).
 
-query_mount(Base_addr) :-
-    /* struct hlist_head mnt_hash;
-       struct mount *mnt_parent; 
-       struct vfsmount mnt;
-       struct list_head mnt_mounts;
-       struct list_head mnt_child;
-       struct list_head mnt_instance;
-       const char *mnt_devname;
-       struct list_head mnt_list;
-    */
-    get_time(Current),
+
+query_mount_hash(Base_addr) :-
     pointer(Ptr),
-    string_val(Str),
-    int(Int),
-    /* Type Invariants */
     Ptr_profile = ([
-        [Mnt_hash_addr, Mnt_hash_val],
-        [Mnt_parent_addr, Mnt_parent_val],
-        [Vfsmount_addr, Vfsmount_val],
-        [Mnt_child_addr, Mnt_child_val],
-        [Mnt_devname_addr, Mnt_devname_val],
-        [Mnt_list_addr, Mnt_list_val]
+        [Mount_addr, Mount_val]
     ]),
-    Int_profile = ([
-        [Mnt_flags_addr, Mnt_flags_val]
-    ]),    
-    
     tuples_in(Ptr_profile, Ptr),
-    tuples_in(Int_profile, Int),
-    /* Order Invariants */
-    chain([Mnt_hash_addr, Mnt_parent_addr, Vfsmount_addr, Mnt_flags_addr,
-            Mnt_child_addr, Mnt_devname_addr, Mnt_list_addr], #<),
-    Mnt_hash_addr #= Base_addr,
-    /* mnt_hash_addr is a list_head */
-    Mnt_parent_addr #> Base_addr + 8,
-    Mnt_list_addr - Base_addr #< 200,
-    labeling([enum], [Mnt_devname_addr, Mnt_devname_val]),
-    query_string_pointer(Mnt_devname_val),
-    Mnt_devname_offset #= Mnt_devname_addr - Base_addr,
-    /* the offset from mnt_mounts to mnt_list remains the same, so it's safe to use fixed offsets. */
-    Mnt_child_addr #= Mnt_devname_addr - 32,
-    Mnt_list_addr #= Mnt_devname_addr + 8,
-    Mnt_flags_addr #= Vfsmount_addr + 16,
-    labeling([enum], [Mnt_child_addr, Mnt_list_addr, Vfsmount_addr, Vfsmount_val]),
-    /* Seems unnecessary 
-    Mnt_list_offset #= Mnt_list_addr - Base_addr,
-    Mnt_list #= Mnt_list_val - Mnt_list_offset,
-    Mnt_list #> 0,
-    query_mount_struct(Mnt_list, Mnt_devname_offset),
-    */
-    Vfsmount_val #>= 0,
-    /* Here we can infer layout of dentry structure 
-       Maybe need to infer using another dentry, somehow it may not be initialized. 
-    */
-    Vfsmount_addr #> 0,
-    %query_dentry(Vfsmount_addr),
+    Mount_addr #< Base_addr + 150,
+    Mount_val #> 0,
+    labeling([enum], [Mount_addr, Mount_val]),
+    query_mount(Mount_val).
 
-    labeling([enum], [Mnt_parent_addr, Mnt_parent_val]),
-    /* To verify another mount struct, only one-level query, so it does not direct call query_mount recursively */
-    
-    query_mount_struct(Mnt_parent_val, Mnt_devname_offset),
-    
 
-    get_time(End),
-    Time_past is End - Current,
-
-    log("mount", "mnt_hash", Mnt_hash_addr, Base_addr),
-    log("mount", "mnt_parent", Mnt_parent_addr, Base_addr),
-    log("mount", "mnt_child", Mnt_child_addr, Base_addr),
-    log("mount", "mnt_devname", Mnt_devname_addr, Base_addr),
-    log("mount", "mnt_list", Mnt_list_addr, Base_addr).
 
 query_net_device(Base_addr) :- 
     /*
@@ -294,7 +233,8 @@ query_net_device(Base_addr) :-
         unsigned int     promiscuity;
         struct in_device *ip_ptr;
     */
-    get_time(Current),
+    statistics(real_time, [Start|_]),
+    %get_time(Current),
     pointer(Ptr),
     string_val(Str),
     int(Int),
@@ -330,12 +270,14 @@ query_net_device(Base_addr) :-
     labeling([enum], [IP_ptr_addr, IP_ptr_val]),
     query_in_device(IP_ptr_val),
 
-    get_time(End),
-    Time_past is End - Current,
+    %get_time(End),
+    %Time_past is End - Current,
+    statistics(real_time, [End|_]),
 
-    log("net_device", "name", Name_addr, Base_addr),
-    log("net_device", "ip_ptr", IP_ptr_addr, Base_addr),
-    log("net_device", "dev_list", Dev_list_addr, Base_addr).
+    log("./profile/net_device", "name", Name_addr, Base_addr),
+    log("./profile/net_device", "ip_ptr", IP_ptr_addr, Base_addr),
+    log("./profile/net_device", "dev_list", Dev_list_addr, Base_addr),
+    log("./profile/net_device", "time", End, Start).
 
 
 query_inet_sock(Base_addr) :-
@@ -348,7 +290,8 @@ query_inet_sock(Base_addr) :-
        some hardcoded ruels to help pinpoint some offsets.  
     sk_buff_head, two non-zero pointers, one unsigned long, one integer.
     sk_protocol is a unsigned long number after sk_write_buffer, and they have the same offset. */
-    get_time(Current),
+    %get_time(Current),
+    statistics(real_time, [Start|_]),
     pointer(Ptr),
     long(Ulg),
     int(Int),
@@ -397,13 +340,16 @@ query_inet_sock(Base_addr) :-
 
     labeling([enum], [Skc_family_addr, Sk_receive_queue_addr, Sk_write_queue_addr, Sk_protocol_addr]),
 
-    get_time(End),
-    Time_past is End - Current,
+    %get_time(End),
+    %Time_past is End - Current,
+    statistics(real_time, [End|_]),
 
-    log("inet_sock", "sk_receive_queue", Sk_receive_queue_addr, Base_addr),
-    log("inet_sock", "Sk_write_queue", Sk_write_queue_addr, Base_addr),
-    log("inet_sock", "Skc_family", Skc_family_addr, Base_addr),
-    log("inet_sock", "Sk_protocol", Sk_protocol_addr, Base_addr).
+
+    log("./profile/inet_sock", "sk_receive_queue", Sk_receive_queue_addr, Base_addr),
+    log("./profile/inet_sock", "Sk_write_queue", Sk_write_queue_addr, Base_addr),
+    log("./profile/inet_sock", "Skc_family", Skc_family_addr, Base_addr),
+    log("./profile/inet_sock", "Sk_protocol", Sk_protocol_addr, Base_addr),
+    log("./profile/inet_sock", "time", End, Start).
 
 query_resource(Base_addr) :-
     /*
@@ -417,7 +363,7 @@ query_resource(Base_addr) :-
     /* This structure remains unchanged, thus we can have some
        hardcoded rules to help inference. */
 
-    get_time(Current),
+    statistics(real_time, [Start|_]),
     pointer(Ptr),
     long(Ulg),
     int(Int),
@@ -441,100 +387,162 @@ query_resource(Base_addr) :-
     tuples_in(Int_profile, Int),
 
     Child_val #> 0,
+    Start_addr #>= Base_addr,
     chain([Start_addr, End_addr, Name_addr, Flags_addr, Parent_addr, Sibling_addr, Child_addr], #<),
     %Name_addr #= Base_addr + 16,
     Child_addr #=< Base_addr + 64,
-    labeling([enum], [Name_addr, Name_val]),
+    labeling([enum], [Start_addr, End_addr, Name_addr, Name_val]),
     query_string_pointer(Name_val),
     Name_offset #= Name_addr - Base_addr,
     labeling([enum], [Child_addr, Child_val]),
     query_name_pointer(Child_val, Name_offset),
 
-    get_time(End),
-    Time_past is End - Current,
+    statistics(real_time, [End|_]),
 
-    log("resource", "Start_addr", Start_addr, Base_addr),
-    log("resource", "End_addr", End_addr, Base_addr),
-    log("resource", "Name_addr", Name_addr, Base_addr),
-    log("resource", "Child_addr", Child_addr, Base_addr).
 
-query_inode(Base_addr) :-
-    /*
-        struct inode_operations *i_op;
-        struct super_block      *i_sb;
-        struct address_space    *i_mapping;
-    */
-    get_time(Current),
+    log("./profile/resource", "Start_addr", Start_addr, Base_addr),
+    log("./profile/resource", "End_addr", End_addr, Base_addr),
+    log("./profile/resource", "Name_addr", Name_addr, Base_addr),
+    log("./profile/resource", "Child_addr", Child_addr, Base_addr),
+    log("./profile/resource", "resource", End, Start).
+
+
+query_neigh_table(Base_addr) :- 
+    /* nht at offset 464 */
     pointer(Ptr),
-    long(Ulg),
-    int(Int),
-    /* Type Invariants */
     Ptr_profile = ([
-        [I_op_addr, I_op_val],
-        [I_sb_addr, I_sb_val],
-        [I_mapping_addr, I_mapping_val],
-        [I_fop_addr, I_fop_val]
+        [Nht_addr, Nht_val]
     ]),
-    Ulong_profile = ([
-        /* i_mode is actually not long type. */
-        [I_mode_addr, I_mode_val],
-        [I_ino_addr, I_ino_val],
-        [I_size_addr, I_size_val],
-        [I_atime_addr, I_atime_val],
-        [_I_atime_addr, _I_atime_val],
-        [I_mtime_addr, I_mtime_val],
-        [I_ctime_addr, I_ctime_val],
-        [_I_ctime_addr, _I_ctime_val]
+    tuples_in(Ptr_profile, Ptr),
+    Nht_addr #>= Base_addr + 448,
+    Nht_addr #=< Base_addr + 472,
+    labeling([enum], [Nht_addr, Nht_val]),
+    query_neigh_hash_table(Nht_val).
+
+
+query_seq_operations(Base_addr) :-
+    /* Four successive function pointers */
+    pointer(Ptr),
+    Ptr_profile = ([
+        [Start_addr, Start_val],
+        [Stop_addr, Stop_val],
+        [Next_addr, Next_val],
+        [Show_addr, Show_val]
+    ]),
+    tuples_in(Ptr_profile, Ptr),
+    chain([Start_addr, Stop_addr, Next_addr, Show_addr], #<),
+    Start_addr #= Base_addr,
+    Show_addr #= Base_addr + 24,
+    Start_val #> 0,
+    Stop_val #> 0,
+    Next_val #> 0,
+    Show_val #> 0.
+
+query_tcp_seq_afinfo(Base_addr) :-
+    pointer(Ptr),
+    int(Int),
+    Ptr_profile = ([
+        [Name_addr, Name_val],
+        [F_ops_addr, F_ops_val],
+        [Ops_addr, Ops_val]
     ]),
     Int_profile = ([
-        [I_uid_addr, I_uid_val],
-        [I_gid_addr, I_gid_val]
-    ]),    
-    
+        [Family_addr, Family_val]
+    ]),
     tuples_in(Ptr_profile, Ptr),
-    tuples_in(Ulong_profile, Ulg),
     tuples_in(Int_profile, Int),
+    Name_addr #= Base_addr,
+    Ops_addr #= Base_addr + 24,
+    chain([Name_addr, Family_addr, F_ops_addr, Ops_addr], #<),
+    
+    labeling([enum], [Name_addr, Name_val]),
+    query_string_pointer(Name_val).
 
-    chain([I_mode_addr, I_uid_addr, I_gid_addr, I_op_addr, I_sb_addr, I_mapping_addr, I_ino_addr,
-           I_size_addr, I_atime_addr, _I_atime_addr, I_mtime_addr, I_ctime_addr, _I_ctime_addr, I_fop_addr], #<),
+query_udp_seq_afinfo(Base_addr) :-
+    pointer(Ptr),
+    int(Int),
+    Ptr_profile = ([
+        [Name_addr, Name_val],
+        [Udp_table_addr, Udp_table_val],
+        [F_ops_addr, F_ops_val],
+        [Ops_addr, Ops_val]
+    ]),
+    Int_profile = ([
+        [Family_addr, Family_val]
+    ]),
+    tuples_in(Ptr_profile, Ptr),
+    tuples_in(Int_profile, Int),
+    Name_addr #= Base_addr,
+    Ops_addr #= Base_addr + 32,
+    chain([Name_addr, Family_addr, Udp_table_addr, F_ops_addr, Ops_addr], #<),
+    
+    labeling([enum], [Name_addr, Name_val]),
+    query_string_pointer(Name_val).
 
-    I_mode_addr #= Base_addr,
-    I_mode_val #> 0,
-    I_gid_addr #= I_mode_addr + 8,
-    %I_op_addr #= Base_addr + 32,
-    I_op_val #> 0,
-    labeling([enum], [I_op_addr, I_op_val]),
-    query_inode_operations(I_op_val),
+query_tty_driver(Base_addr) :-
+    /* tty_driver remains unchanged, some rules are hardcoded. */
+    pointer(Ptr),
+    int(Int),
+    Ptr_profile = ([
+        [Driver_name_addr, Driver_name_val],
+        [Name_addr, Name_val],
+        [Ttys_addr, Ttys_val],
+        [Tty_drivers_addr, Tty_drivers_val]
+    ]),
+    Int_profile = ([
+        [Magic_addr, Magic_val],
+        [Kref_addr, Kref_val],
+        [Name_base_addr, Name_base_val],
+        [Major_addr, Major_val],
+        [Minor_start_addr, Minor_start_val],
+        [Num_addr, Num_val]
+    ]),
+    tuples_in(Ptr_profile, Ptr),
+    tuples_in(Int_profile, Int),
+    Magic_addr #= Base_addr,
+    Kref_addr #= Magic_addr + 4,
+    Num_addr #= Name_base + 12,
+    Ttys_addr #= Base_addr + 128,
+    Tty_drivers_addr #= Base_addr + 168,
+    chain([Magic_addr, Kref_addr, Driver_name_addr, Name_addr, Name_base_addr, Major_addr, Minor_start_addr,
+            Num_addr, Ttys_addr, Tty_drivers_addr], #<),
+    labeling([enum], [Driver_name_addr, Driver_name_val, Name_addr, Name_val]),
+    query_string_pointer(Driver_name_val),
+    query_string_pointer(Name_val).
 
-    I_sb_addr #= I_op_addr + 8,
-    I_mapping_addr #= I_sb_addr + 8,
-    I_atime_addr #= I_size_addr + 8,
-    I_mtime_addr #= I_atime_addr + 16,
-    I_ctime_addr #= I_mtime_addr + 16,
-    _I_ctime_addr #= I_ctime_addr + 8,
-    I_size_val #> 0,
-    I_atime_val #> 4096,
-    I_mtime_val #> 4096,
-    I_ctime_val #> 4096,
-    I_fop_addr #< Base_addr + 400,
-    labeling([enum], [I_sb_addr, I_mapping_addr, I_atime_addr, I_mtime_addr, I_ctime_addr]),
+query_proc_dir_entry(Base_addr) :-
+    pointer(Ptr),
+    int(Int),
+    long(Ulg),
+    Ptr_profile = ([
+        [Proc_iops_addr, Proc_iops_val],
+        [Proc_fops_addr, Proc_fops_val]
+    ]),
+    Int_profile = ([
+        [Low_ino_addr, Low_ino_val],
+        [Mode_addr, Mode_val],
+        [Nlink_addr, Nlink_val],
+        [Uid_addr, Uid_val],
+        [Gid_addr, Gid_val]
+    ]),
 
+    tuples_in(Ptr_profile, Ptr),
+    tuples_in(Int_profile, Int),
+    Low_ino_addr #= Base_addr,
+    Gid_addr #= Low_ino_addr + 16,
+    Proc_fops_addr #= Proc_iops_addr + 8,
+    Proc_fops_addr #=< Base_addr + 40,
+    chain([Low_ino_addr, Mode_addr, Nlink_addr, Uid_addr, Gid_addr, Proc_iops_addr, Proc_fops_addr], #<),
+    labeling([enum], [Proc_iops_addr, Proc_iops_val, Proc_fops_addr, Proc_fops_val]),
+    Proc_fops_val #> 0,
+    %Proc_iops_val #> 0,
+    %query_inode_operations(Proc_iops_val),
+    query_inode_operations(Proc_fops_val).
 
-    labeling([enum], [I_fop_addr, I_fop_val]),
-    I_fop_val #> 0,
-    query_inode_operations(I_fop_val),
+query_kset(Base_addr) :-
+    /* skip */
+    1 #= 1.
 
-    log("./profile/inode", "I_mode_addr", I_mode_addr, Base_addr),
-    log("./profile/inode", "I_uid_addr", I_uid_addr, Base_addr),
-    log("./profile/inode", "I_gid_addr", I_gid_addr, Base_addr),
-    log("./profile/inode", "I_op_addr", I_op_addr, Base_addr),
-    log("./profile/inode", "I_sb_addr", I_sb_addr, Base_addr),
-    log("./profile/inode", "I_mapping_addr", I_mapping_addr, Base_addr),
-    log("./profile/inode", "I_size_addr", I_size_addr, Base_addr),
-    log("./profile/inode", "I_atime_addr", I_atime_addr, Base_addr),
-    log("./profile/inode", "I_mtime_addr", I_mtime_addr, Base_addr),
-    log("./profile/inode", "I_ctime_addr", I_ctime_addr, Base_addr),
-    log("./profile/inode", "I_fop_addr", I_fop_addr, Base_addr).
 
 
 test(Base_addr) :-
@@ -608,6 +616,15 @@ test(Base_addr) :-
     print_nl("Finished, total time", Time_past).
 
 
+query_neigh_hash_table(Base_addr) :-
+    process_create(path('python'),
+                    ['subquery.py', Base_addr, "neigh_hash_table"],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
 query_string_pointer(Val) :- 
     process_create(path('python'),
                     ['subquery.py', Val, "string_pointer"],
@@ -626,6 +643,14 @@ query_name_pointer(Val, Name_offset) :-
     close(In),
     isTrue(Result).
 
+query_mount(Base_addr) :- 
+    process_create(path('python'),
+                    ['subquery.py', Base_addr, "mount"],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
 
 query_mount_struct(Val, Offset) :- 
     process_create(path('python'),
