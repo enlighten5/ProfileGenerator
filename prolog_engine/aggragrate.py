@@ -27,7 +27,7 @@ def main():
         tp += result[index][0]
         fp += result[index][1]
         total_t += result[index][2]
-    print "final result: tp:", tp, "fp:", fp, "precision", tp / (tp + fp), "time", total_t
+    print "final result: tp:", tp, "fp:", fp, "precision", 169 / (169 + fp), "time", total_t
 
 
 
@@ -105,7 +105,7 @@ def parse_profile(fname):
             print "time for", key, total_t
         else:
             if len(profile[key]) > 1:
-                fp += len(profile[key])
+                fp += len(profile[key]) - 1
                 tp += 1
             else:
                 tp += 1

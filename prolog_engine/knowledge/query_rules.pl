@@ -40,7 +40,45 @@ start_query(Base_addr) :-
     close(In),
     isTrue(Result).
 
-    
+query_test(Base_addr) :-
+    statistics(real_time, [Start|_]),
+    get_time(Current),
+    %current_predicate(string_val/1),
+    pointer(Ptr),
+    string_val(Str),
+    int(Int),
+    Ptr_profile = ([
+        [MM_addr, MM_val],
+        [MM2_addr, MM2_val],
+        [Tasks_addr, Tasks_val],
+        [Parent_addr, Parent_val],
+        [Real_parent_addr, Real_parent_val],
+        [Child_addr, Child_val],
+        [Group_leader_addr, Group_leader_val],
+        [Thread_group_addr, Thread_group_val],
+        [Real_cred_addr, Real_cred_val],
+        [Cred_addr, Cred_val]
+    ]),
+    Str_profile = ([
+        [Comm_addr, Comm_val]    
+    ]),
+    Int_profile = ([
+        [Pid_addr, Pid_val],
+        [Tgid_addr, Tgid_val]    
+    ]),
+    chain([Tasks_addr, MM_addr, MM2_addr, Pid_addr, Tgid_addr, Real_parent_addr, Parent_addr , Child_addr, 
+           Group_leader_addr, Thread_group_addr, Real_cred_addr, Cred_addr, Comm_addr], #<),
+    Tasks_addr #> Base_addr,
+    Comm_addr #= Base_addr + 968,
+    tuples_in(Ptr_profile, Ptr),
+    tuples_in(Str_profile, Str),
+    tuples_in(Int_profile, Int),
+    labeling([enum], [Tasks_addr, Tasks_val, Comm_addr, Comm_val, Pid_addr, Tgid_addr]),
+    Comm_offset #= Comm_addr - Base_addr,
+    Tasks_offset #= Tasks_addr - Base_addr,
+    Tasks_val #> 0,
+    query_list_head(Tasks_val, Comm_offset, Tasks_offset).
+
 
 query_task_struct(Base_addr) :-
     statistics(real_time, [Start|_]),
@@ -213,6 +251,7 @@ query_module(Base_addr) :-
 
 
 query_mount_hash(Base_addr) :-
+    statistics(real_time, [Start|_]),
     pointer(Ptr),
     Ptr_profile = ([
         [Mount_addr, Mount_val]
@@ -221,7 +260,10 @@ query_mount_hash(Base_addr) :-
     Mount_addr #< Base_addr + 150,
     Mount_val #> 0,
     labeling([enum], [Mount_addr, Mount_val]),
-    query_mount(Mount_val).
+    query_mount(Mount_val),
+    statistics(real_time, [End|_]),
+    log("./profile/mount_hash", "mount", Mount_addr, Base_addr),
+    log("./profile/mount_hash", "mount_hash", End, Start).
 
 
 
@@ -299,6 +341,7 @@ query_inet_sock(Base_addr) :-
     Ptr_profile = ([
         [Sk_receive_queue_addr, Sk_receive_queue_val],
         [Sk_receive_queue_prev_addr, Sk_receive_queue_prev_val],
+        [Sk_send_head_addr, Sk_send_head_val],
         [Sk_write_queue_addr, Sk_write_queue_val],
         [Sk_write_queue_prev_addr, Sk_write_queue_prev_val]
     ]),
@@ -307,6 +350,7 @@ query_inet_sock(Base_addr) :-
         [Sk_protocol_addr, Sk_protocol_val]
     ]),
     Int_profile = ([
+        [Sk_rcvlowat_addr, Sk_rcvlowat_val],
         [Receive_lock_addr, Receive_lock_val],
         [Write_lock_addr, Write_lock_val],
         [Qlen_receive_addr, Qlen_receive_val],
@@ -324,16 +368,18 @@ query_inet_sock(Base_addr) :-
     Sk_receive_queue_prev_val #> 0,
     Sk_write_queue_val #> 0,
     Sk_write_queue_prev_val #> 0,
-    chain([Skc_family_addr, Sk_receive_queue_addr, Sk_receive_queue_prev_addr, Qlen_receive_addr, Receive_lock_addr,
-          Sk_write_queue_addr, Sk_write_queue_prev_addr, Qlen_write_addr, Write_lock_addr,
+    chain([Skc_family_addr, Sk_rcvlowat_addr, Sk_receive_queue_addr, Sk_receive_queue_prev_addr, Qlen_receive_addr, Receive_lock_addr,
+          Sk_send_head_addr, Sk_write_queue_addr, Sk_write_queue_prev_addr, Qlen_write_addr, Write_lock_addr,
           Sk_protocol_addr], #<),
     /* sock_common is at least 136 */
     Sk_receive_queue_addr #> Base_addr + 136,
+    Sk_receive_queue_addr #=< Sk_rcvlowat_addr + 28,
+    Sk_protocol_addr #= Sk_write_queue_addr + 160,
     Sk_protocol_addr #< Base_addr + 700,
     Sk_receive_queue_prev_addr #= Sk_receive_queue_addr + 8,
     Qlen_receive_addr #= Sk_receive_queue_prev_addr + 8,
     Receive_lock_addr #= Qlen_receive_addr + 4,
-
+    Sk_write_queue_addr #= Sk_send_head_addr + 8,
     Sk_write_queue_prev_addr #= Sk_write_queue_addr + 8,
     Qlen_write_addr #= Sk_write_queue_prev_addr + 8,
     Write_lock_addr #= Qlen_write_addr + 4,

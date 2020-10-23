@@ -1,6 +1,7 @@
 import mmap, struct, os, sys
 from time import gmtime, strftime
 import LinuxMemory as linux
+import AddressSpaceARM as arm
 # debian_x64
 # lububntu_x64
 offset = [
@@ -119,11 +120,15 @@ class AddressSpace(linux.AMD64PagedMemory):
         if version_idx:
             self.mem.seek(version_idx)
             version = self.mem.read(8)
-            self.version = version[:version.index('-')-2]
+            v = version[:version.index('-')]
+            if len(v) >= 7:
+                self.version = v[:-3]
+            else:
+                self.version = v[:-2]
             print "Linux version", float(self.version)
         else:
             print "[Error] - cannot identify Linux version"
-            self.verbose = 0
+            self.version = 0
         #self.find_KASLR_shift("kallsyms_on_each_symbol")
         vdtb_idx = self.mem.find("SYMBOL(swapper_pg_dir)=") + len("SYMBOL(swapper_pg_dir)=")
         if vdtb_idx-len("SYMBOL(swapper_pg_dir)=")>0:
@@ -133,7 +138,7 @@ class AddressSpace(linux.AMD64PagedMemory):
         else:
             print "cannot find dtb_vaddr"
             dtb_vaddr = "0xffffffffaee0a000"
-
+        #self.find_kallsyms_address_pre_46_arm()
         self.image_name = os.path.basename(mem_path)
         store_dtb = "./" + self.image_name + "_dtb"
         g_dtb = 0
@@ -148,7 +153,7 @@ class AddressSpace(linux.AMD64PagedMemory):
                     g_dtb = None
         except IOError:
             g_dtb = None
-        '''
+        
         if not g_dtb:
             try: 
                 with open(self.image_name + "_symbol_table", 'r') as fd:
@@ -189,6 +194,7 @@ class AddressSpace(linux.AMD64PagedMemory):
             with open(store_dtb, 'w') as fd:
                 fd.write(str(self.dtb))
         #self.find_dtb(0)
+        '''
 
     def parse_elf_header(self):
         '''
@@ -1098,16 +1104,16 @@ class AddressSpace(linux.AMD64PagedMemory):
         print "kallsyms_address", hex(kallsyms_address)
         #kallsyms_candidate = [kallsyms_address, kallsyms_address - 0x8, kallsyms_address - 0x16]
         # After finding kallsyms_address, scan the memory and save the symbol table. 
-        symbol_table = []
+        symbol_address = []
         kallsyms_address += 0x8
         content = self.read_memory(kallsyms_address, 0x8)
         value = self.v(8, content)
         while value[0] & 0xffffffff00000000 == 0xffffffff00000000:
-            symbol_table.append(value[0])
+            symbol_address.append(value[0])
             kallsyms_address += 0x8 
             content = self.read_memory(kallsyms_address, 0x8)
             value = self.v(8, content)
-        print "len of symbol table", len(symbol_table)
+        print "len of symbol table", len(symbol_address)
         # After the symbol table, the value should be kallsyms_num
         kallsyms_num_syms = kallsyms_address
         content = self.read_memory(kallsyms_address, 0x8)
@@ -1118,7 +1124,6 @@ class AddressSpace(linux.AMD64PagedMemory):
         print "kallsyms_address", hex(kallsyms_address)
         # We have the symbol table. We can find kallsyms_address in the symbol list, which points to the init address
         # of the symbol table. kallsyms_num, kallsyms_token_index and kallsyms_token_table are adjacent. 
-        #print hex(symbol_table[0])
 
         '''
             | kallsyms_addresses     |
@@ -1131,22 +1136,23 @@ class AddressSpace(linux.AMD64PagedMemory):
         kallsyms_names_addr = kallsyms_num_syms + 8
         kallsyms_token_table_addr = self.find_token_table(kallsyms_names_addr)
         kallsyms_token_index_addr = self.find_token_index(kallsyms_token_table_addr)
-        print "symbols:", hex(kallsyms_names_addr), hex(kallsyms_token_table_addr), hex(kallsyms_token_index_addr)
+        print "kallsyms_names_addr:", hex(kallsyms_names_addr), "token_table:", hex(kallsyms_token_table_addr), "token_index", hex(kallsyms_token_index_addr)
         self.log("FINISH!")
 
         symbol_name = []
         # Size of kallsyms_names in page granularity. 
         # It's ok to use a larger name size, if we do not know the exact size.
         name_size = 0x115*2
+        name_size = (kallsyms_token_table_addr - kallsyms_names_addr) / 4096
         self.extract_kallsyms_symbols(symbol_name, kallsyms_names_addr, name_size, kallsyms_num_syms, kallsyms_token_table_addr, kallsyms_token_index_addr)
         #print symbol_name
         with open(self.image_name + "_symbol_table", 'w') as output:
             for index in range(min(len(symbol_address), len(symbol_name))):
-                output.write(hex(symbol_address[index]) + "\t" + hex(offsets[index]) + " " + symbol_name[index] + "\n")
+                output.write(hex(symbol_address[index]) + "\t" + hex(0) + " " + symbol_name[index] + "\n")
             #print symbol_name[index], "\t\t", hex(symbol_address[index])
         self.log("finished parsing and saving kernel symbols")
 
-    def find_kallsyms_address_pre_46_arm(self):
+    def _find_kallsyms_address_pre_46_arm(self):
         '''
             [-] For Linux kernel before 4.6
             This function is to find the symbol table in the memory. There are some patterns of the values in the symbol
@@ -1157,7 +1163,7 @@ class AddressSpace(linux.AMD64PagedMemory):
         for step in range(0, self.mem.size(), 4096):
             page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
             if not page:
-                print "Error: no available content"
+                #print "Error: no available content"
                 continue
             if "swapper" in page:
                 print "Found swapper at", hex(step)
@@ -1389,13 +1395,13 @@ class AddressSpace(linux.AMD64PagedMemory):
         '''
         
         while length:
-            #print "token_index", ord(kallsyms_names[data])
-            if data > len(kallsyms_names):
+            #print "token_index", len(kallsyms_names), data, length, ord(kallsyms_names[data])
+            if data >= len(kallsyms_names)-1:
                 print "names out of bound"
-                exit(0)
-            if ord(kallsyms_names[data]) > len(kallsyms_token_index):
+                return -1
+            if ord(kallsyms_names[data]) >= len(kallsyms_token_index):
                 print "token index out of bound"
-                exit(0)
+                return -1
             token_table_index = kallsyms_token_index[ord(kallsyms_names[data])]
             #print "token_table_index", token_table_index
             #print "len", length
@@ -1771,6 +1777,8 @@ class AddressSpace(linux.AMD64PagedMemory):
         '''
         off = 0
         for index in range(size+1):
+            if off == -1:
+                break
             off = self.kallsyms_expand_symbol(off, symbol_name, kallsyms_names, kallsyms_token_table, kallsyms_token_index_v)
         #off = self.kallsyms_expand_symbol(off, kallsyms_names, kallsyms_token_table_v, kallsyms_token_index_v)
 
@@ -1860,385 +1868,7 @@ class AddressSpace(linux.AMD64PagedMemory):
             off = self.kallsyms_expand_symbol(off, symbol_name, kallsyms_names, kallsyms_token_table, kallsyms_token_index_v)
         #off = self.kallsyms_expand_symbol(off, kallsyms_names, kallsyms_token_table_v, kallsyms_token_index_v)
 
-        
-class AddressSpaceARM(linux.ArmAddressSpace):
-    def __init__(self, mem_path, dtb = 0):
-        try:
-            f = os.open(mem_path, os.O_RDONLY)
-        except:
-            print "Error: open image failed.\n"
-            sys.exit(1)
-        try:
-            self.mem = mmap.mmap(f, 0, mmap.MAP_PRIVATE, mmap.PROT_READ)
-        except:
-            print "Error mmap\n"
-            sys.exit(1)
-        self.verbose = 1
-        self.offset = offset8
-        self.mem_path = mem_path
-        self.mem.seek(0)
-        
-        if "ELF" in self.mem.read(6):
-            print "ELF headers"
-            self.has_elf_header = True
-        else:
-            print "No ELF headers"
-            self.has_elf_header = False
 
-        self.image_name = os.path.basename(mem_path)
-        store_dtb = "./" + self.image_name + "_dtb"
-        try: 
-            with open(store_dtb, 'r') as fd:
-                g_dtb = fd.readline()
-                #print "--", g_dtb
-                if g_dtb:
-                    g_dtb = int(g_dtb)
-                else:
-                    g_dtb = None
-        except IOError:
-            g_dtb = None
-        self.dtb_vaddr = dtb_vaddr
-        self.dtb = dtb
-        if dtb:
-            self.dtb = dtb
-        elif g_dtb:
-            self.dtb = g_dtb
-        else:
-            self.find_dtb(0x1000000)
-            with open(store_dtb, 'w') as fd:
-                fd.write(str(self.dtb))
-
-    def read_memory(self, paddr, length):
-        # Comment out for testing
-        '''
-        if self.has_elf_header :
-            paddr = self.translate(paddr)
-            if not paddr:
-                #print "Error: translate failed.\n"
-                return None
-                #sys.exit(1)
-        '''
-        if self.mem.size() - paddr < length:
-            print "Error: read out of bound memory.", hex(paddr), hex(self.mem.size())
-            sys.exit(1)
-
-        self.mem.seek(paddr)
-        value = self.mem.read(length)
-        if not value:
-            print "Error: fail to read memory at", hex(paddr)
-            sys.exit(1)
-        return value
-    def v(self, size, content):
-        s = "<" + str(size/8) + "Q"
-        value = struct.unpack(s, content)
-        return value
-
-    def find_kallsyms_address_pre_46_arm(self):
-        '''
-            [-] For Linux kernel before 4.6
-            This function is to find the symbol table in the memory. There are some patterns of the values in the symbol
-            table that can help us locate the table. First, the symbol values are valid pointers. Second, they are sorted according
-            to the values in an accessdening order. 
-        '''
-        kallsyms_address = 0
-        for step in range(0, self.mem.size(), 4096):
-            page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
-            if not page:
-                print "Error: no available content"
-                continue
-            if "swapper" in page:
-                print "Found swapper at", hex(step)
-            value = self.v(4096, page)
-            count = 0
-            for item in range(len(value)):
-                if item == 0 or item == len(value)-1:
-                    if value[item] & 0xffff800000000000 == 0xffff800000000000:
-                        count += 1
-                else:
-                    if value[item] & 0xffff800000000000 == 0xffff800000000000:
-                        if value[item] > value[item-1] and value[item] < value[item+1]:
-                            count += 1
-            # An assumption here is that the symbol table is at least larger than one page
-            if count == 4096/8:
-                print "found partial symbol table at", hex(step)
-                kallsyms_address = step
-                break
-        if kallsyms_address == 0:
-            print "cannot find symbol table"
-            return
-        # Now we find a page that contains a parital symbol table. Then scan backwards to
-        # find the start address of symbol table.
-        content = self.read_memory(kallsyms_address, 0x8)
-        value = self.v(8, content)
-        while value[0] & 0xffff800000000000 == 0xffff800000000000:
-            kallsyms_address -= 0x8
-            content = self.read_memory(kallsyms_address, 0x8)
-            value = self.v(8, content)
-        print "kallsyms_address", hex(kallsyms_address)
-        #kallsyms_candidate = [kallsyms_address, kallsyms_address - 0x8, kallsyms_address - 0x16]
-        # After finding kallsyms_address, scan the memory and save the symbol table. 
-        symbol_table = []
-        kallsyms_address += 0x8
-        content = self.read_memory(kallsyms_address, 0x8)
-        value = self.v(8, content)
-        while value[0] & 0xffff800000000000 == 0xffff800000000000:
-            symbol_table.append(value[0])
-            kallsyms_address += 0x8
-            content = self.read_memory(kallsyms_address, 0x8)
-            value = self.v(8, content)
-        kallsyms_num_syms = len(symbol_table)
-        print "len of symbol table", kallsyms_num_syms
-        step = 0
-        while step < 10:
-            kallsyms_address += step*8
-            content = self.read_memory(kallsyms_address, 0x8)
-            value = self.v(8, content)
-            if value[0] == kallsyms_num_syms:
-                print "Found kallsyms_num_syms", kallsyms_num_syms
-                kallsyms_address += 0x8
-                break
-            step += 1
-        while True:
-            content = self.read_memory(kallsyms_address, 0x8)
-            value = self.v(8, content)
-            if not value[0] == 0:
-                break
-            kallsyms_address += 0x8
-        # Now kallsyms_address points to kallsyms_names
-
-        kallsyms_names_addr = kallsyms_address
-        kallsyms_token_table_addr = self.find_token_table(kallsyms_names_addr)
-        kallsyms_token_index_addr = self.find_token_index(kallsyms_token_table_addr)
-        print hex(kallsyms_names_addr), hex(kallsyms_token_table_addr), hex(kallsyms_token_index_addr)
-        
-        symbol_name = []
-        # Size of kallsyms_names in page granularity. 
-        # It's ok to use a larger name size, if we do not know the exact size.
-        name_size = 0x115*2
-        self.log("FINISH!")
-        self.extract_kallsyms_symbols(symbol_name, kallsyms_names_addr, name_size, kallsyms_num_syms, kallsyms_token_table_addr, kallsyms_token_index_addr)
-        #print symbol_name
-        with open(self.image_name + "_symbol_table", 'w') as output:
-            for index in range(min(len(symbol_table), len(symbol_name))):
-                output.write(hex(symbol_table[index]) + "\t" + symbol_name[index] + "\n")
-            #print symbol_name[index], "\t\t", hex(symbol_address[index])
-
-        # Now we can locate the init address of the symbol table
-        kallsyms_address = kallsyms_address - kallsyms_num_syms*8
-        print "kallsyms_address", hex(kallsyms_address)
-        # We have the symbol table. We can find kallsyms_address in the symbol list, which points to the init address
-        # of the symbol table. kallsyms_num, kallsyms_token_index and kallsyms_token_table are adjacent. 
-
-    def extract_kallsyms_symbols(self, symbol_name, 
-                                    kallsyms_names_addr, 
-                                    name_size,
-                                    kallsyms_num_syms,
-                                    kallsyms_token_table_addr, 
-                                    kallsyms_token_index_addr):
-        size = kallsyms_num_syms
-
-        if not kallsyms_names_addr:
-            print "[-]Error: invalid kallsyms_names_addr"
-            exit(0)
-        kallsyms_names = ""
-        print "kallsyms_token_table_addr paddr", kallsyms_token_table_addr
-        if not kallsyms_token_table_addr:
-            print "[-]Error: invalid kallsyms_token_table_addr"
-            exit(0)
-        kallsyms_token_table = ""
-        kallsyms_token_table_v = []
-        if not kallsyms_token_index_addr:
-            print "[-]Error: invalid kallsyms_token_index_addr"
-            exit(0)
-        kallsyms_token_index = []
-        kallsyms_token_index_v = []
-        #kallsyms_names_addr =  0x1a171ae0 + 16
-        # Extract kallsyms_names
-        while name_size:
-            content = self.read_memory(kallsyms_names_addr, 4096)
-            kallsyms_names += content
-            kallsyms_names_addr += 4096
-            name_size -= 1
-
-        print hex(len(kallsyms_names))
-        #print kallsyms_names
-        '''
-        with open("names", 'w') as output:
-            for item in kallsyms_names:
-                output.write(str((item, ord(item)))+'\n')
-        '''
-
-        # Extract kallsyms_token_table
-        table_size = (kallsyms_token_index_addr - kallsyms_token_table_addr)/8
-        #kallsyms_token_table_addr = 0x1a28c098
-        #table_size = 512
-        #kallsyms_token_table_addr -= 16
-        while table_size+32:
-            content = self.read_memory(kallsyms_token_table_addr, 8)
-            for item in content:
-                kallsyms_token_table_v.append(struct.unpack("<c", item)[0])
-            kallsyms_token_table += content
-            kallsyms_token_table_addr += 8
-            table_size -= 1
-
-        #print "length of token table", hex(len(kallsyms_token_table))
-        tmp = ''
-        '''
-        with open("table", 'w') as output:
-            for item in kallsyms_token_table:
-                output.write(str((item, ord(item)))+'  ')
-        '''
-        #print [ord(i) for i in kallsyms_token_table]
-        
-        # Extract kallsyms_token_index
-        # Not sure about the index_size
-        # From script/kallsyms.c, it has 256 entry, 256*2/8 = 64
-        index_size = 64
-        #print "index_addr", hex(kallsyms_token_index_addr), index_size
-        #kallsyms_token_index_addr = 0x1a28c430
-        while index_size:
-            content = self.read_memory(kallsyms_token_index_addr, 8)
-            for idx in range(0, 7, 2):
-                kallsyms_token_index.append(content[idx:idx+2])
-            kallsyms_token_index_addr += 8
-            index_size -= 1
-        for index in range(len(kallsyms_token_index)):
-            content = struct.unpack("<H", kallsyms_token_index[index])
-            kallsyms_token_index_v.append(content[0])
-            #print content
-            #print [i for i in kallsyms_token_index[index]]
-        #print "len of token index array", len(kallsyms_token_index_v)
-        '''
-        with open("index", 'w') as output:
-            for item in kallsyms_token_index_v:
-                output.write(str(item)+'  ')
-        '''
-        print "expand compressed strings"
-        off = 0
-        for index in range(size+1):
-            off = self.kallsyms_expand_symbol(off, symbol_name, kallsyms_names, kallsyms_token_table, kallsyms_token_index_v)
-        #off = self.kallsyms_expand_symbol(off, kallsyms_names, kallsyms_token_table_v, kallsyms_token_index_v)
-
-    def find_token_table(self, kallsyms_names_paddr):
-        # token_table address is larger than kallsyms_names_paddr
-        # Start search from kallsyms_names_paddr
-        kallsyms_token_table_addr = kallsyms_names_paddr
-        #kallsyms_token_table_addr = 0x13b81000
-        candidate = []
-        # Read the content
-        for step in range(kallsyms_token_table_addr, self.mem.size(), 8):
-            kallsyms_token_table = ""
-            kallsyms_token_table_v = []
-            # Table_size is larger than 512 in reality
-            table_size = 512/8
-            init_addr = step
-            while table_size:
-                content = self.read_memory(init_addr, 8)
-                if not content:
-                    break
-                for item in content:
-                    kallsyms_token_table_v.append(struct.unpack("<c", item)[0])
-                kallsyms_token_table += content
-                init_addr += 8
-                table_size -= 1
-            if table_size > 1:
-                continue
-            table_size = 512/8
-            '''
-            with open("table", 'w') as output:
-                for item in kallsyms_token_table:
-                    output.write(str((item, ord(item)))+'\n')
-            '''
-            #print "t in table", kallsyms_token_table.count('\x00'), kallsyms_token_table.count('r'), len(kallsyms_token_table)
-            # table length is less than 1000. around 300 zeros in it. let's exam 512 element of them. 
-            '''
-                The characters in token_table are valid as per naming rules; they are combinations of 
-                letters, numbers and symbols like underscores
-            '''
-            # I changed this range for ARM64 images, it used to be 46-125 for x86_64
-            if not all(ord(c)>=36 and ord(c)<125 or ord(c)==0 for c in kallsyms_token_table):
-                #print "pass"
-                continue
-            '''
-                The elements in token_table in grouped and bounded by '\x00'
-                no successive apperance of '\x00'
-            '''
-            if "\x00\x00" in kallsyms_token_table:
-                #print "not pass"
-                continue
-            '''
-                Compute the distance of each '\x00'. distance >= 1 and is normally less than 15.
-                15 is somehow experimental.
-            '''
-            zero_index = [i for i, j in enumerate(kallsyms_token_table) if j == '\x00']
-            #print zero_index
-            for idx in reversed(range(1, len(zero_index))):
-                zero_index[idx] = zero_index[idx] - zero_index[idx-1]
-            #print zero_index
-            if any(c > 15 for c in zero_index):
-                #print zero_index
-                continue
-            candidate.append(step)
-            break
-        if len(candidate) == 0:
-            print "kallsyms_token_table not found"
-        else:
-            print "found kallsyms_token_table_addr"
-            print [hex(c) for c in candidate]
-            
-            with open("table", 'w') as output:
-                for item in kallsyms_token_table:
-                    output.write(str((item, ord(item)))+'\n')
-            
-            return candidate[0]
-
-    def find_token_index(self, token_table_paddr):
-        result = 0
-        for kallsyms_token_index_addr in range(token_table_paddr, self.mem.size(), 8):
-            kallsyms_token_index = []
-            kallsyms_token_index_v = []
-            # From script/kallsyms.c, it has 256 entry, 256*2/8 = 64
-            index_size = 64
-            #print "index_addr", hex(kallsyms_token_index_addr), index_size
-            init_addr = kallsyms_token_index_addr
-            while index_size:
-                content = self.read_memory(init_addr, 8)
-                if not content:
-                    break
-                for idx in range(0, 7, 2):
-                    kallsyms_token_index.append(content[idx:idx+2])
-                init_addr += 8
-                index_size -= 1
-            if index_size > 1:
-                continue
-            index_size = 64
-            for index in range(len(kallsyms_token_index)):
-                content = struct.unpack("<H", kallsyms_token_index[index])
-                kallsyms_token_index_v.append(content[0])
-                #print content
-                #print [i for i in kallsyms_token_index[index]]
-            #print "len of token index array", len(kallsyms_token_index_v)
-            '''
-                The token index start from zero, and in an increasing order. 
-            '''
-            if not kallsyms_token_index_v[0] == 0:
-                continue
-            if kallsyms_token_index_v[1] == 0:
-                continue
-            #print kallsyms_token_index_v
-            print "kallsyms_token_index_addr", hex(kallsyms_token_index_addr)
-            result = kallsyms_token_index_addr
-            break
-        '''
-        with open("index", 'w') as output:
-            for item in kallsyms_token_index_v:
-                output.write(str(item)+'\n')
-        '''
-        
-        if not result:
-            print "Cannot find token_index"
-        else:
-            return result
 
 
 class AddressSpace_test(linux.AMD64PagedMemory):
@@ -2379,72 +2009,8 @@ def main():
     '''
         Set dtb to 1 to avoid searching for dtb
     '''
-    addr_space = AddressSpace(mem_path)
-    #addr_space = AddressSpaceARM(mem_path)
-    
-    #paddr = addr_space.vtop(0xffffffffac413740)
-    #print paddr
-    #paddr = 384804864
-    #print paddr
-    #addr_space.extract_info(paddr, "./tmp")
-    #addr_space.find_comm()
-    #addr_space.parse_system_map('/home/zhenxiao/ProfileGenerator/volatility/volatility/plugins/overlays/linux/413/boot/System.map-4.13.0-041300-generic')
-    #paddr = addr_space.read_memory(0x15c04c0 + 784, 8)
-    #paddr = addr_space.vtop(0xffffffffc0168580)
-    #paddr = addr_space.vtop(0xffff9584d9a2d600)
-    #net_device addr
-    paddr = addr_space.vtop(0xffff9584ded80000)
-    paddr = addr_space.vtop(0xffff9584dee80000)
-    #paddr = addr_space.vtop(0xffffffff81fa2558 + 0x1c400000)
-    #paddr = 0xd1b1b00 - 1488
-    #addr_space.find_task_list_head(paddr)
-    #paddr = 0x1505a448 - 0x8
-    #a mount struct
-    paddr = 0x1ed80248 - 2
-    #sock
-    paddr = addr_space.vtop(0xffff9584ded45f80)
-    #iomem_resource
-    paddr = addr_space.vtop(0xffffffff81e4d500+0x1c400000)
-    paddr = 0x13cd105f
-    #init_fs -> fs_struct
-    paddr = addr_space.vtop(0xffffffff81eb8640 + 0x1c400000)
-    #dentry
-    paddr = 0x18ef7a80
-    #inode
-    paddr = 0x18f30520
-    paddr = 0x13a4ab00
-    paddr = 440468672
-    #mm 4.12
-    paddr = 0x1eff1000
-    #mmap
-    paddr = 0x13e9c180
-    #vm_file
-    paddr = 0x13e21100
-    #dentry from vm_file
-    #paddr = 0x17d27000
-    #vfsmount
-    #paddr = 0x1eedc1a0
-    #init_mm
-    #paddr = 0x1a5115e0
-    #file_operations
-    paddr = 0x1a04b0c0
-    #mount_hashtable
-    paddr = 0x1a666398
-    #neigh_table
-    paddr = addr_space.vtop(0xffffffff820693f0 + 0x5400000)
-    #mount_hashtable
-    paddr = addr_space.vtop(0xffffffff82066398 + 0x5400000)
-    paddr = 0x1c200000
-    paddr = 0x1b8a8c00
-    paddr = addr_space.vtop(0xffffffffa9b0d600 + addr_space.shift)
-    paddr = 0xab31b40
-
-    # 0xffffffffa9a0a000 init_top_pgt from symbol table
-    # 0x1020a000 physical address pgt
-    # 0xffffffffaee0a000 swapper_pg_dir
-
-    # 0xffffffffa9a13780 init_task from symbol table
-    # 0x10213780
+    addr_space = AddressSpace(mem_path, 1)
+    #addr_space = arm.AddressSpaceARM(mem_path, 1)
 
     '''
     tmp = addr_space.read_memory(paddr, 8)
@@ -2460,10 +2026,11 @@ def main():
         #addr_space.extract_info(paddr, "./tmp")
         #paddr += 4096
         size -= 1
-    addr_space.extract_info(paddr, "./tmp")
+    #addr_space.extract_info(paddr, "./tmp")
     #addr_space.extract_kallsyms_symbols([],0,0,93398,0,0)
-    #addr_space.find_kallsyms_address()
+    addr_space.find_kallsyms_address()
     #addr_space.find_kallsyms_address_pre_46()
+    #addr_space.find_kallsyms_address_pre_46_arm()
     #addr_space.find_kallsyms_address_pre_46_32bit()
     #addr_space.find_token_table(0xff17368)
     #addr_space.find_token_index(0x1a28c098)
@@ -2475,11 +2042,6 @@ def main():
 
     #addr_space.find_KASLR_shift("kallsyms_on_each_symbol")
     #addr_space.find_tasks(0x1c2349d8-3000)
-
-    
-    
-
-    pass
 
 if __name__ == "__main__":
     main()
