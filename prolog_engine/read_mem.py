@@ -129,7 +129,6 @@ class AddressSpace(linux.AMD64PagedMemory):
         else:
             print "[Error] - cannot identify Linux version"
             self.version = 0
-        #self.find_KASLR_shift("kallsyms_on_each_symbol")
         vdtb_idx = self.mem.find("SYMBOL(swapper_pg_dir)=") + len("SYMBOL(swapper_pg_dir)=")
         if vdtb_idx-len("SYMBOL(swapper_pg_dir)=")>0:
             self.mem.seek(vdtb_idx)
@@ -140,6 +139,8 @@ class AddressSpace(linux.AMD64PagedMemory):
             dtb_vaddr = "0xffffffffaee0a000"
         #self.find_kallsyms_address_pre_46_arm()
         self.image_name = os.path.basename(mem_path)
+        self.find_kallsyms_address()
+        self.find_KASLR_shift("kallsyms_on_each_symbol")
         store_dtb = "./" + self.image_name + "_dtb"
         g_dtb = 0
         '''
@@ -639,6 +640,7 @@ class AddressSpace(linux.AMD64PagedMemory):
 
     def find_KASLR_shift(self, target):
         location = 0
+        symbol_file = self.image_name + "_symbol_table"
         self.log("start search KASLR shift")
         for step in range(0, self.mem.size(), 4096):
             page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
@@ -647,17 +649,24 @@ class AddressSpace(linux.AMD64PagedMemory):
             for idx in range(0, 4096, 8):
                 #print hex(step+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
                 if target in page[idx:idx+2*len(target)]:
-                    print "found ", target, hex(step+idx), page[idx-16:idx+32]
+                    #print "found ", target, hex(step+idx), page[idx-16:idx+32]
                     for tmpidx in range(idx, idx+2*len(target), 1):
                         if target == page[tmpidx:tmpidx+len(target)]:
                             print "found ", target, hex(step+tmpidx), page[idx-16:idx+32]
                             location = step+tmpidx
-                            break
+                            with open(symbol_file, 'r') as symbol:
+                                line = symbol.readline()
+                                while line:
+                                    index = line.find('\t')
+                                    if "__kstrtab_"+target in line[index:].strip():
+                                        print "find", line[index:].strip()
+                                        print "virtual to physical shift:", hex(int(line[:line.find('\t')][:-1], 16) - location)
+                                    line = symbol.readline()
+                            self.log("end search KASLR shift")
+                            return
                         if location:
                             break
-                    #for tmpidx in range(0, 4096, 8):
-                    #    print hex(step+tmpidx), hex(self.is_user_pointer(page[tmpidx:tmpidx+8], 0))
-                    #return step
+
         self.log("end search KASLR shift")
             
     # This function is to find the address of target process name
@@ -2028,7 +2037,7 @@ def main():
         size -= 1
     #addr_space.extract_info(paddr, "./tmp")
     #addr_space.extract_kallsyms_symbols([],0,0,93398,0,0)
-    addr_space.find_kallsyms_address()
+    #addr_space.find_kallsyms_address()
     #addr_space.find_kallsyms_address_pre_46()
     #addr_space.find_kallsyms_address_pre_46_arm()
     #addr_space.find_kallsyms_address_pre_46_32bit()
