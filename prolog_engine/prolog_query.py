@@ -3,9 +3,11 @@ from program import *
 from pyswip.core import *
 from pyswip import *
 import time, mmap, struct
+import AddressSpaceARM as arm
 class PrologQuery(rm.AddressSpace):
+#class PrologQuery(arm.AddressSpaceARM):
     def __init__(self, image_path):
-        #rm.AddressSpace.__init__(self, image_path, 0x3809000)
+        #arm.AddressSpaceARM.__init__(self, image_path, 0, 0)
         rm.AddressSpace.__init__(self, image_path, 0, 0)
 
     def construct_kb(self, paddr, input_f, output_f):
@@ -42,8 +44,8 @@ class PrologQuery(rm.AddressSpace):
         query_cmd = "query_" + query + "(" + str(paddr) + ")" 
         for s in p.query(query_cmd, catcherrors=False):
             count += 1
-            if count:
-                break
+            #if count:
+            #    break
             #print(s["Base_addr"])
         print "count result:", count
         self.log("finish query \t- " + query)
@@ -120,7 +122,7 @@ def main():
     '''
     #paddr = 0x4018af8-1656
     paddr = 0x1ed8c900 - 1984
-    paddr = prolog_query.find_swapper_page()
+    #paddr = prolog_query.find_swapper_page()
     print paddr
     #openwrt
     paddr = 0x1c10480
@@ -141,7 +143,8 @@ def main():
     paddr = 0x18ef7a80
     #init_fs
     paddr = prolog_query.vtop(0xffffffff81eb8640 + 0x1c400000)
-    #paddr = 0x18f30520
+    paddr = 0x38bc070
+    #prolog_query.start_query(int(paddr), "test")
     '''
     What global symbols are needed to start the logic inference?
     init_task

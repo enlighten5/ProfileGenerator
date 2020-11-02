@@ -167,8 +167,8 @@ possible_mm_struct(Current_addr) :-
     log("./profile/mm_struct", "start_brk", Start_brk_addr, Current_addr),
     log("./profile/mm_struct", "brk", Brk_addr, Current_addr),
     log("./profile/mm_struct", "start_stack", Start_stack_addr, Current_addr),
-    log("./profile/mm_struct", "arg_start", ARG_start_addr, Current_addr),
-    log("./profile/mm_struct", "mm_struct", End, Start).
+    log("./profile/mm_struct", "arg_start", ARG_start_addr, Current_addr).
+    %log("./profile/mm_struct", "mm_struct", End, Start).
 
 
 possible_vm_area_struct(Base_addr, MM_addr) :-
@@ -223,8 +223,8 @@ possible_vm_area_struct(Base_addr, MM_addr) :-
     log("./profile/vm_area_struct", "vm_mm", Vm_mm_addr, Base_addr),
     log("./profile/vm_area_struct", "vm_flag", VM_flag_addr, Base_addr),
     log("./profile/vm_area_struct", "vm_pgoff", VM_pgoff_addr, Base_addr),
-    log("./profile/vm_area_struct", "vm_file", VM_file_addr, Base_addr),
-    log("./profile/vm_area_struct", "vm_area_struct", End, Start).
+    log("./profile/vm_area_struct", "vm_file", VM_file_addr, Base_addr).
+    %log("./profile/vm_area_struct", "vm_area_struct", End, Start).
 
 check_vm_area_struct(Base_addr, Level) :-
     process_create(path('python'),
@@ -276,8 +276,8 @@ possible_vm_file(Base_addr) :-
     statistics(real_time, [End|_]),
 
     log("./profile/file", "f_path", Vfs_mount_addr, Base_addr),
-    log("./profile/file", "f_op", F_op_addr, Base_addr),
-    log("./profile/file", "file", End, Start).
+    log("./profile/file", "f_op", F_op_addr, Base_addr).
+    %log("./profile/file", "file", End, Start).
 
 query_file_operation(Base_addr) :-
     process_create(path('python'),
@@ -398,8 +398,8 @@ possible_dentry(Base_addr) :-
     log("./profile/dentry", "d_inode", D_inode_addr, Base_addr),
     log("./profile/dentry", "d_iname", D_iname_addr, Base_addr),
     log("./profile/dentry", "dchild", Dchild_addr, Base_addr),
-    log("./profile/dentry", "d_subdirs", D_subdirs_addr, Base_addr),
-    log("./profile/dentry", "dentry", End, Start).
+    log("./profile/dentry", "d_subdirs", D_subdirs_addr, Base_addr).
+    %log("./profile/dentry", "dentry", End, Start).
 
 query_inode(Base_addr) :-
     process_create(path('python'),
@@ -491,8 +491,8 @@ possible_inode(Base_addr) :-
     log("./profile/inode", "I_atime_addr", I_atime_addr, Base_addr),
     log("./profile/inode", "I_mtime_addr", I_mtime_addr, Base_addr),
     log("./profile/inode", "I_ctime_addr", I_ctime_addr, Base_addr),
-    log("./profile/inode", "I_fop_addr", I_fop_addr, Base_addr),
-    log("./profile/inode", "inode", End, Start).
+    log("./profile/inode", "I_fop_addr", I_fop_addr, Base_addr).
+    %log("./profile/inode", "inode", End, Start).
 
 
 query_inode_operations(Base_addr) :-
