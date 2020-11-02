@@ -18,99 +18,6 @@ log(File_name, Name, Addr, Base):-
     nl(Stream),
     close(Stream).
 
-possible_task_struct(Base_addr) :-
-    get_time(Current),
-    current_predicate(string_val/1),
-    pointer(Ptr),
-    string_val(Str),
-    int(Int),
-    Ptr_profile = ([
-        [MM2_addr, MM2_val],
-        [Tasks_addr, Tasks_val],
-        [Parent_addr, Parent_val],
-        [Real_parent_addr, Real_parent_val],
-        [Child_addr, Child_val],
-        [Group_leader_addr, Group_leader_val],
-        [Thread_group_addr, Thread_group_val],
-        [Cred_addr, Cred_val],
-        [FS_struct_addr, FS_struct_val]
-    ]),
-    Str_profile = ([
-        [Comm_addr, Comm_val]    
-    ]),
-    Int_profile = ([
-        [Pid_addr, Pid_val],
-        [Tgid_addr, Tgid_val]    
-    ]),
-    chain([Tasks_addr, MM2_addr, Pid_addr, Tgid_addr, Real_parent_addr, Parent_addr , Child_addr, 
-           Group_leader_addr, Thread_group_addr, Cred_addr, Comm_addr, FS_struct_addr], #<),
-    %MM2_addr #> Base_addr + 1000,
-    Tasks_addr #> MM2_addr - 100,
-    %FS_struct_addr #< Base_addr + 4000,
-    Tgid_addr #= Pid_addr + 4,
-    Real_parent_addr #< Tgid_addr + 20,
-    Real_parent_addr #= Parent_addr - 8,
-    Child_addr #= Parent_addr + 8,
-    %FIXME This may be too strong
-    Group_leader_addr #=< Child_addr +32,
-    %Comm_addr #= Base_addr + 1656,
-    %Tasks_addr #= Base_addr + 1072,
-    %FS_struct_addr #= Base_addr + 2640,
-
-
-    tuples_in(Ptr_profile, Ptr),
-    tuples_in(Str_profile, Str),
-    tuples_in(Int_profile, Int),
-
-    label([MM2_addr, MM2_val]),
-    % make query after labeling
-    MM2_val #> 0,
-    integer(MM2_val),
-    
-    query_mm_struct(MM2_val),
-    labeling([enum], [Tasks_addr, Tasks_val,  Comm_addr, Comm_val ]),
-
-    Comm_offset #= Comm_addr - Base_addr,
-    Tasks_offset #= Tasks_addr - Base_addr,
-    Tasks_val #> 0,
-    query_list_head(Tasks_val, Comm_offset, Tasks_offset),
-
-    labeling([enum], [Real_parent_addr, Real_parent_val, Group_leader_addr, Group_leader_val]),
-    Real_parent_val #> 0,
-    Group_leader_val #> 0,
-    query_ts(Real_parent_val, Comm_offset, Tasks_offset),
-    query_ts(Group_leader_val, Comm_offset, Tasks_offset),
-
-    labeling([enum], [Cred_addr, Cred_val]),
-    Cred_val #> 0,
-    query_cred(Cred_val),
-
-    labeling([enum], [FS_struct_addr, FS_struct_val]),
-    FS_struct_val #> 0,
-    %query_fs_struct(FS_struct_val),
-
-
-
-    get_time(End),
-    Time_past is End - Current,
-    MM_offset #= MM2_addr - Base_addr,
-    Real_parent_offset #= Real_parent_addr - Base_addr,
-    Group_leader_offset #= Group_leader_addr - Base_addr,
-    log("profile.txt", "tasks", Tasks_addr, Base_addr),
-    log("profile.txt", "mm_struct", MM2_addr, Base_addr),
-    log("profile.txt", "comm", Comm_addr, Base_addr),
-    log("profile.txt", "parent", Parent_addr, Base_addr),
-    log("profile.txt", "group_leader", Group_leader_addr, Base_addr),
-    log("profile.txt", "cred", Cred_addr, Base_addr),
-
-    
-    print_nl('tasks offset', Tasks_offset),
-    print_nl('mm offset', MM_offset),
-    print_nl('comm offset', Comm_offset),
-    print_nl('real_parent', Real_parent_offset),
-    print_nl('group_leader', Group_leader_offset),
-    print_nl("Finished, total time", Time_past).
-
 possible_string_pointer(Base_addr) :-
     /* Verify if this pointer points to a stirng */
     string_val(Str),
@@ -139,8 +46,6 @@ possible_mount_struct(Base_addr, Offset) :-
     labeling([enum], [Mnt_devname_addr, Mnt_devname_val]),
     query_string_pointer(Mnt_devname_val).
 
-
-
 possible_kernel_param(Base_addr) :-
     string_val(Str),
     Str_profile = [
@@ -161,6 +66,8 @@ possible_in_device(Base_addr) :-
     */
     pointer(Ptr),
     int(Int),
+    log("./profile/debug", "in_device", Ifa_list_val, 0),
+
     Ptr_profile = ([
         [Dev_addr, Dev_val],
         [Ifa_list_addr, Ifa_list_val]
@@ -173,6 +80,7 @@ possible_in_device(Base_addr) :-
     tuples_in(Int_profile, Int),
     Dead_addr #= Refcnt_addr + 4,
     chain([Dev_addr, Refcnt_addr, Dead_addr, Ifa_list_addr], #<),
+
     Dev_addr #= Base_addr,
     Ifa_list_addr #= Base_addr + 16,
     labeling([enum], [Ifa_list_addr, Ifa_list_val]),
@@ -203,8 +111,6 @@ possible_in_ifaddr(Base_addr) :-
     Rcu_head_addr #= Ifa_dev_addr + 8,
     labeling([enum], [Hash_addr, Ifa_next_addr, Ifa_dev_addr, Rcu_head_addr]).
 
-
-
 possible_mm_struct(Current_addr) :- 
     statistics(real_time, [Start|_]),
     pointer(Ptr),
@@ -216,30 +122,19 @@ possible_mm_struct(Current_addr) :-
     ],
     Ulong_profile = [
         [Mmap_base_addr, Mmap_base_val],
-        [Mmap_legacy_base_addr, Mmap_legacy_base_val],
         [Task_size_addr, Task_size_val],
-        [High_vm_end_addr, High_vm_end_val],
         [Start_brk_addr, Start_brk_val],
         [Brk_addr, Brk_val],
         [Start_stack_addr, Start_stack_val],
         [ARG_start_addr, ARG_start_val]
     ],
     Mmap_addr #= Current_addr,
-
-
-    Mmap_base_addr #> Mmap_addr,
-    %FIXME mmap_base need more value constraint, because we removed mmap_legacy_base and highest_vm_end.
     Mmap_base_val #> 0x7f0000000000,
-    High_vm_end_addr #= Mmap_base_addr + 24,
-    
-    chain([Mmap_base_addr, Mmap_legacy_base_addr, Task_size_addr, High_vm_end_addr, Pgd_addr], #<),
-
-
+    chain([Mmap_addr, Mmap_base_addr, Task_size_addr, Pgd_addr], #<),
     Pgd_addr #> Task_size_addr,
     Pgd_addr #=< Task_size_addr + 40,
     %FIXME: This rule may not be true for other mm_struct.
     Task_size_val #>= 0x7ffffffff000,
-
 
     Start_brk_addr #> Pgd_addr,
     Start_stack_val #> 0x7ff000000000,
@@ -251,10 +146,9 @@ possible_mm_struct(Current_addr) :-
     tuples_in(Ptr_profile, Ptr),
     tuples_in(Ulong_profile, Ulg),
 
-
-    labeling([enum], [Mmap_addr, Mmap_val, Mmap_base_addr, Pgd_addr, Pgd_val]),
     Mmap_val #> 0,
     Pgd_val #> 0,
+    labeling([enum], [Mmap_addr, Mmap_val, Mmap_base_addr, Pgd_addr, Pgd_val]),
     
     process_create(path('python'),
                     ['subquery.py', Mmap_val, "vm_area_struct", Current_addr],
@@ -310,11 +204,10 @@ possible_vm_area_struct(Base_addr, MM_addr) :-
     %FIXME: VM_flag may need value constraints.
 
     label([VM_next_addr, VM_next_val]),
-    /* vm_file maybe zero! */
+    /* vm_file maybe zero */
     labeling([enum], [VM_start_addr, VM_end_addr, Vm_mm_addr, Vm_mm_val, VM_flag_addr, VM_pgoff_addr, VM_file_addr, VM_file_val]),
     
     VM_file_val #> 0,
-    
     process_create(path('python'),
                 ['subquery.py', VM_file_val, "vm_file"],
                 [stdout(pipe(In))]),
@@ -323,7 +216,6 @@ possible_vm_area_struct(Base_addr, MM_addr) :-
     close(In),
     isTrue(Result),
     statistics(real_time, [End|_]),
-    
 
     log("./profile/vm_area_struct", "vm_start", VM_start_addr, Base_addr),
     log("./profile/vm_area_struct", "vm_end", VM_end_addr, Base_addr),
@@ -386,8 +278,6 @@ possible_vm_file(Base_addr) :-
     log("./profile/file", "f_path", Vfs_mount_addr, Base_addr),
     log("./profile/file", "f_op", F_op_addr, Base_addr),
     log("./profile/file", "file", End, Start).
-
-
 
 query_file_operation(Base_addr) :-
     process_create(path('python'),
@@ -646,56 +536,6 @@ possible_inode_operations(Base_addr) :-
     _L1_addr #= Base_addr,
     _L12_addr #= Base_addr + 88.
 
-
-
-
-possible_nothing() :-
-
-    %log("profile.txt", "dentry addr", Base_addr, 0),
-    Dparent_addr #> Base_addr,
-    Dname_addr #> 0,
-    Dname_addr #< Base_addr + 200,
-    %Dname_addr #= Base_addr + 160,
-    %FIXME This child rule is not applicable for old kernel version. 
-    %chain([Dparent_addr, Dname_addr, Dchild_addr], #<),
-    %Dchild_addr #< Base_addr + 200,
-    tuples_in(Ptr_profile, Ptr),
-    tuples_in(Str_profile, Str),
-    labeling([enum], [Dparent_addr, Dparent_val, Dname_addr, Dchild_addr, Dchild_val]),
-    Dname_offset #= Dname_addr - Base_addr,
-    integer(Dname_offset),
-    Dparent_val #> 0,
-    
-    %FIXME d_parent may not be initialized
-    /*process_create(path('python'),
-                ['subquery.py', Dparent_val, "d_entry", Dname_offset],
-                [stdout(pipe(In))]),
-    read_string(In, Len, X),
-    string_codes(X, Result),
-    close(In),
-    isTrue(Result),*/
-
-    %FIXME: may need to find another way for all list_head. 
-    /*Dchild_offset #= Dchild_addr - Base_addr,
-    integer(Dchild_offset),
-    Dchild_base #= Dchild_val - Dchild_offset,
-    integer(Dchild_base),
-    Dchild_base #> 0,
-    process_create(path('python'),
-                ['subquery.py', Dchild_base, "d_entry", Dname_offset],
-                [stdout(pipe(NewIn))]),
-    read_string(NewIn, Len, X),
-    string_codes(X, Result),
-    close(NewIn),
-    isTrue(Result),*/
-    log("profile.txt", "d_iname", Dname_addr, Base_addr),
-    statistics(real_time, [End|_]).
-/*
-    log("profile.txt", "d_iname", Dname_addr, Base_addr),
-    log("profile.txt", "d_parent", Dparent_addr, Base_addr),
-    log("profile.txt", "d_child", Dchild_addr, Base_addr),
-    log("profile.txt", "dentry time", End, Start).
-*/
 possible_d_entry(Base_addr, Dname_offset) :-
     current_predicate(string_val/1),
     string_val(Str),
@@ -878,12 +718,6 @@ possible_mount(Base_addr) :-
     Mnt_list_addr #= Mnt_devname_addr + 8,
     Mnt_flags_addr #= Vfsmount_addr + 16,
     labeling([enum], [Mnt_child_addr, Mnt_list_addr, Vfsmount_addr, Vfsmount_val]),
-    /* Seems unnecessary 
-    Mnt_list_offset #= Mnt_list_addr - Base_addr,
-    Mnt_list #= Mnt_list_val - Mnt_list_offset,
-    Mnt_list #> 0,
-    query_mount_struct(Mnt_list, Mnt_devname_offset),
-    */
     Vfsmount_val #>= 0,
     /* Here we can infer layout of dentry structure 
        Maybe need to infer using another dentry, somehow it may not be initialized. 
@@ -896,7 +730,6 @@ possible_mount(Base_addr) :-
     
     query_mount_struct(Mnt_parent_val, Mnt_devname_offset),
     
-
     %get_time(End),
     %Time_past is End - Current,
     statistics(real_time, [End|_]),
@@ -907,6 +740,17 @@ possible_mount(Base_addr) :-
     log("./profile/mount", "mnt_list", Mnt_list_addr, Base_addr),
     log("./profile/mount", "mount", End, Start).
 
+possible_neigh_table(Base_addr) :- 
+    /* nht at offset 464 */
+    pointer(Ptr),
+    Ptr_profile = ([
+        [Nht_addr, Nht_val]
+    ]),
+    tuples_in(Ptr_profile, Ptr),
+    Nht_addr #>= Base_addr + 448,
+    Nht_addr #=< Base_addr + 472,
+    labeling([enum], [Nht_addr, Nht_val]),
+    query_neigh_hash_table(Nht_val).
 
 possible_neigh_hash_table(Base_addr) :-
     /* neighbour **hash_buckets */
@@ -934,7 +778,7 @@ possible_hash_buckets(Base_addr) :-
         [Neighbour_addr, Neighbour_val]
     ]),
     tuples_in(Ptr_profile, Ptr),
-    Neighbour_addr #< Base_addr + 32,
+    Neighbour_addr #< Base_addr + 64,
     Neighbour_val #> 0,
     labeling([enum], [Neighbour_addr, Neighbour_val]),
     process_create(path('python'),
@@ -946,7 +790,7 @@ possible_hash_buckets(Base_addr) :-
     isTrue(Result).
 
 possible_neighbour(Base_addr) :-
-    /* net_device *dev at offset 464 */
+    /* net_device *dev at offset 368 */
     pointer(Ptr),
     Ptr_profile = ([
         [Dev_addr, Dev_val]
@@ -1011,14 +855,19 @@ possible_net_device(Base_addr) :-
     /* dev_list offset can be hardcoded since it remains the same */
     Dev_list_addr #= Base_addr + 80,
     labeling([enum], [Name_addr, Dev_list_addr, Dev_list_val]),
+    log("./profile/debug", "net_device", Name_addr, Base_addr),
     /* do not have a good constrain to narrow down ip_ptr, use its rough offset
        to reduce the search space. 
      */
+    IP_ptr_addr #= Base_addr + 760,
+    log("./profile/debug", "net_device2", Name_addr, Base_addr),
+
     IP_ptr_addr #> Base_addr + 700,
     IP_ptr_val #> 0,
-    labeling([enum], [IP_ptr_addr, IP_ptr_val]),
-    query_in_device(IP_ptr_val),
 
+    labeling([enum], [IP_ptr_addr, IP_ptr_val]),
+
+    query_in_device(IP_ptr_val),
     %labeling([enum], [Dev_addr_addr, Dev_addr_val]),
     %query_string_pointer(Dev_addr_val),
 
@@ -1051,6 +900,15 @@ query_mount_struct(Val, Offset) :-
 query_dentry(Dentry_val) :-
     process_create(path('python'),
                     ['subquery.py', Dentry_val, "dentry"],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+query_neigh_hash_table(Base_addr) :-
+    process_create(path('python'),
+                    ['subquery.py', Base_addr, "neigh_hash_table"],
                     [stdout(pipe(In))]),
     read_string(In, Len, X),
     string_codes(X, Result),

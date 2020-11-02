@@ -119,12 +119,13 @@ class AddressSpace(linux.AMD64PagedMemory):
         if version_idx:
             self.mem.seek(version_idx)
             version = self.mem.read(8)
-            self.version = version[:version.index('-')-2]
-            print "Linux version", float(self.version)
+            index = version.index('.')
+            index2 = version[index+1:].index('.')
+            self.version = version[:index+index2+1]
+            print "Linux version", self.version
         else:
             print "[Error] - cannot identify Linux version"
             self.verbose = 0
-        #self.find_KASLR_shift("kallsyms_on_each_symbol")
         vdtb_idx = self.mem.find("SYMBOL(swapper_pg_dir)=") + len("SYMBOL(swapper_pg_dir)=")
         if vdtb_idx-len("SYMBOL(swapper_pg_dir)=")>0:
             self.mem.seek(vdtb_idx)
@@ -135,6 +136,10 @@ class AddressSpace(linux.AMD64PagedMemory):
             dtb_vaddr = "0xffffffffaee0a000"
 
         self.image_name = os.path.basename(mem_path)
+        if not os.path.exists(self.image_name + '_symbol_table'):
+            self.find_kallsyms_address()
+        #self.find_KASLR_shift("kallsyms_on_each_symbol")
+
         store_dtb = "./" + self.image_name + "_dtb"
         g_dtb = 0
         '''
@@ -532,8 +537,8 @@ class AddressSpace(linux.AMD64PagedMemory):
                 else:
                     # add for test randstruct
                     str_content = content[item*8:(item+1)*8]
-                    if all( ord(c) >= 32 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
-                        if len(str_content.replace('\x00', '')) > 4:
+                    if all( ord(c) >= 32 and ord(c) <= 122 or ord(c)==0 or c=='\xff' for c in str_content ):
+                        if len(str_content.replace('\x00', '').replace('\xff', '')) > 4:
                             if self.verbose:
                                 print "[-] ", item*8, hex(paddr+item*8), "string: ", str_content, hex(number)
                             valid_stirng[item*8] = number
@@ -633,6 +638,7 @@ class AddressSpace(linux.AMD64PagedMemory):
 
     def find_KASLR_shift(self, target):
         location = 0
+        symbol_file = self.image_name + "_symbol_table"
         self.log("start search KASLR shift")
         for step in range(0, self.mem.size(), 4096):
             page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
@@ -646,7 +652,17 @@ class AddressSpace(linux.AMD64PagedMemory):
                         if target == page[tmpidx:tmpidx+len(target)]:
                             print "found ", target, hex(step+tmpidx), page[idx-16:idx+32]
                             location = step+tmpidx
-                            break
+                            with open(symbol_file, 'r') as symbol:
+                                line = symbol.readline()
+                                while line:
+                                    index = line.find('\t')
+                                    if "__kstrtab_kallsyms_on_each_symbol" in line[index:].strip():
+                                        print "find", line[index:].strip()
+                                        print "virtual to physical shift:", hex(int(line[:line.find('\t')][:-1], 16) - location)
+                                    line = symbol.readline()
+                            self.log("end search KASLR shift")
+                            return
+                            
                         if location:
                             break
                     #for tmpidx in range(0, 4096, 8):
@@ -691,6 +707,29 @@ class AddressSpace(linux.AMD64PagedMemory):
             if phys_addr:
                 comm = self.read_memory(phys_addr + (1488-item*8), 8)
                 print comm, item*8
+    def find_task_struct(self, paddr):
+        #init_task = self.vtop(vaddr)
+        page = self.read_memory(paddr, 0x200 * 8)
+        value = struct.unpack("<512Q", page)
+        
+        for item in range(len(value)):
+            if "swapper" in page[item*8:(item+1)*8]:
+                print "found swapper", item*8
+                break
+        comm_offset = item*8
+        for item in range(len(value)):
+            num = value[item]
+            target_addr = self.vtop(value[item])
+            if not target_addr:
+                continue
+            if target_addr == paddr+item*8:
+                continue
+            comm = self.read_memory(target_addr - item*8 + comm_offset, 8)
+            if all(ord(c) >= 36 and ord(c) <= 122 or ord(c)==0 for c in comm):
+                if len(comm.replace('\x00', '')) >= 4:
+                    print "found task", item*8
+                    return self.vtop(value[item+1]) - item*8
+        task_offset = item*8
     # This function is to find the init address of task structure. 
     # It starts from kthread and use the property of parent structure, which is swapper structure. 
     def find_tasks(self, addr):
@@ -2379,8 +2418,8 @@ def main():
     '''
         Set dtb to 1 to avoid searching for dtb
     '''
-    addr_space = AddressSpace(mem_path)
-    #addr_space = AddressSpaceARM(mem_path)
+    #addr_space = AddressSpace(mem_path)
+    addr_space = AddressSpaceARM(mem_path)
     
     #paddr = addr_space.vtop(0xffffffffac413740)
     #print paddr
@@ -2436,8 +2475,8 @@ def main():
     paddr = addr_space.vtop(0xffffffff82066398 + 0x5400000)
     paddr = 0x1c200000
     paddr = 0x1b8a8c00
-    paddr = addr_space.vtop(0xffffffffa9b0d600 + addr_space.shift)
-    paddr = 0xab31b40
+    paddr = addr_space.vtop(0xffffffc0010faf60)
+    #paddr = 0x175634e2
 
     # 0xffffffffa9a0a000 init_top_pgt from symbol table
     # 0x1020a000 physical address pgt

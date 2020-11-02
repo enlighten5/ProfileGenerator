@@ -51,7 +51,7 @@ class SubQuery(pq.PrologQuery):
             #result.append(s["Base"])
             result.append(s)
             counter += 1
-            if counter > 5:
+            if counter > 2:
                 break
 
         if len(result) > 0:

@@ -45,7 +45,7 @@ start_query(Base_addr) :-
 query_task_struct(Base_addr) :-
     statistics(real_time, [Start|_]),
     get_time(Current),
-    %current_predicate(string_val/1),
+    current_predicate(string_val/1),
     pointer(Ptr),
     string_val(Str),
     int(Int),
@@ -53,6 +53,7 @@ query_task_struct(Base_addr) :-
         [MM_addr, MM_val],
         [MM2_addr, MM2_val],
         [Tasks_addr, Tasks_val],
+        [Tasks2_addr, Tasks2_val],
         [Parent_addr, Parent_val],
         [Real_parent_addr, Real_parent_val],
         [Child_addr, Child_val],
@@ -68,11 +69,12 @@ query_task_struct(Base_addr) :-
         [Pid_addr, Pid_val],
         [Tgid_addr, Tgid_val]    
     ]),
-    chain([Tasks_addr, MM_addr, MM2_addr, Pid_addr, Tgid_addr, Real_parent_addr, Parent_addr , Child_addr, 
+    chain([Tasks_addr, Tasks2_addr, MM_addr, MM2_addr, Pid_addr, Tgid_addr, Real_parent_addr, Parent_addr , Child_addr, 
            Group_leader_addr, Thread_group_addr, Real_cred_addr, Cred_addr, Comm_addr], #<),
     %MM2_addr #> Base_addr + 1000,
     MM2_addr #= MM_addr + 8,
     Tasks_addr #> MM2_addr - 100,
+    Tasks2_addr #= Tasks_addr + 8,
 
     Tgid_addr #= Pid_addr + 4,
     Real_parent_addr #< Tgid_addr + 20,
@@ -83,9 +85,9 @@ query_task_struct(Base_addr) :-
     %Sibling next and prev  16
     Group_leader_addr #=< Child_addr +32,
     Cred_addr #= Real_cred_addr + 8,
-    /*MM2_addr #= Base_addr + 1160,
-    Comm_addr #= Base_addr + 1656,
-    Tasks_addr #= Base_addr + 1096,*/
+    MM2_addr #= Base_addr + 1992,
+    /*Comm_addr #= Base_addr + 1656,*/
+    Tasks_addr #= Base_addr + 1904,
 
 
     tuples_in(Ptr_profile, Ptr),
@@ -104,6 +106,8 @@ query_task_struct(Base_addr) :-
     Tasks_offset #= Tasks_addr - Base_addr,
     Tasks_val #> 0,
     query_list_head(Tasks_val, Comm_offset, Tasks_offset),
+
+    labeling([enum], [Tasks2_addr, Tasks2_val]),
 
     labeling([enum], [Real_parent_addr, Real_parent_val, Group_leader_addr, Group_leader_val, Child_addr, Child_val]),
     Real_parent_val #> 0,
@@ -211,19 +215,16 @@ query_module(Base_addr) :-
     log("./profile/module", "module", End, Start).
     %print_nl("Finished, total time", Time_past).
 
-
 query_mount_hash(Base_addr) :-
     pointer(Ptr),
     Ptr_profile = ([
         [Mount_addr, Mount_val]
     ]),
     tuples_in(Ptr_profile, Ptr),
-    Mount_addr #< Base_addr + 150,
+    Mount_addr #< Base_addr + 250,
     Mount_val #> 0,
     labeling([enum], [Mount_addr, Mount_val]),
     query_mount(Mount_val).
-
-
 
 query_net_device(Base_addr) :- 
     /*
@@ -406,19 +407,15 @@ query_resource(Base_addr) :-
     log("./profile/resource", "Child_addr", Child_addr, Base_addr),
     log("./profile/resource", "resource", End, Start).
 
-
-query_neigh_table(Base_addr) :- 
-    /* nht at offset 464 */
+query_neigh_tables(Base_addr) :-
     pointer(Ptr),
     Ptr_profile = ([
-        [Nht_addr, Nht_val]
+        [Neigh_table_addr, Neigh_table_val]
     ]),
     tuples_in(Ptr_profile, Ptr),
-    Nht_addr #>= Base_addr + 448,
-    Nht_addr #=< Base_addr + 472,
-    labeling([enum], [Nht_addr, Nht_val]),
-    query_neigh_hash_table(Nht_val).
-
+    Neigh_table_addr #< Base_addr + 16,
+    labeling([enum], [Neigh_table_addr, Neigh_table_val]),
+    query_neigh_table(Neigh_table_val).
 
 query_seq_operations(Base_addr) :-
     /* Four successive function pointers */
@@ -615,10 +612,9 @@ test(Base_addr) :-
     print_nl('group_leader', Group_leader_offset),
     print_nl("Finished, total time", Time_past).
 
-
-query_neigh_hash_table(Base_addr) :-
+query_neigh_table(Base_addr) :-
     process_create(path('python'),
-                    ['subquery.py', Base_addr, "neigh_hash_table"],
+                    ['subquery.py', Base_addr, "neigh_table"],
                     [stdout(pipe(In))]),
     read_string(In, Len, X),
     string_codes(X, Result),
@@ -718,6 +714,24 @@ query_mm_struct(MM2_val) :-
 query_list_head(Tasks_val, Comm_offset, Tasks_offset) :-
     process_create(path('python'),
                     ['subquery.py', Tasks_val, "list_head", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+query_tasks(Tasks_val, Comm_offset, Tasks_offset) :-
+    process_create(path('python'),
+                    ['subquery.py', Tasks_val, "tasks", Comm_offset, Tasks_offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+query_child(Child_val, Comm_offset, Child_offset) :-
+    process_create(path('python'),
+                    ['subquery.py', Child_val, "child", Comm_offset, Child_offset],
                     [stdout(pipe(In))]),
     read_string(In, Len, X),
     string_codes(X, Result),

@@ -106,6 +106,7 @@ def main():
     prolog_query = PrologQuery(sys.argv[1])
     query = sys.argv[2]
     os.environ["IMAGE_PATH"] = sys.argv[1]
+    print os.environ["IMAGE_PATH"]
     image_name = os.path.basename(sys.argv[1])
     symbol_file = image_name + "_symbol_table"
     #prolog_query.parse_system_map(sys.argv[2])
@@ -157,31 +158,35 @@ def main():
     #"idt_table", "module_kset" do not need to infer layouts
     #query_cmd = ["init_fs"]
     # pre_4.18
-    if float(prolog_query.version) < 4.18:
+    if float(prolog_query.version)*100 < 418:
         query_cmd = ["init_task", "init_fs", "modules", "mount_hashtable", "neigh_tables", "iomem_resource",
-                 "tcp4_seq_afinfo", "udp4_seq_afinfo", "tty_drivers", "proc_root"]
+                 "tcp4_seq_afinfo", "udp4_seq_afinfo", "tty_drivers", "proc_root", "inet_sock", "init_mm"]
         #query_cmd = ["neigh_tables"]
         query_object = {"init_task": "task_struct", "init_fs": "fs_struct", "modules": "module", 
                     "mount_hashtable": "mount_hash",
-                    "neigh_tables": "neigh_table", "iomem_resource": "resource",
+                    "neigh_tables": "neigh_tables", "iomem_resource": "resource",
                     "tcp4_seq_afinfo": "tcp_seq_afinfo", "udp4_seq_afinfo": "udp_seq_afinfo",
                     "tty_drivers": "tty_driver",
                     "proc_root": "proc_dir_entry",
                     "idt_table": "gate_struct",
-                    "module_kset": "kset"}
+                    "module_kset": "kset",
+                    "inet_sock": "inet_sock",
+                    "init_mm": "mm_struct"}
     # after_4.18
-    elif float(prolog_query.version) >= 4.18:
+    elif float(prolog_query.version)*100 >= 418:
         query_cmd = ["init_task", "init_fs", "modules", "mount_hashtable", "neigh_tables", "iomem_resource",
-                 "tcp4_seq_ops", "udp_seq_ops", "tty_drivers", "proc_root"]
-        query_cmd = ["tcp4_seq_ops", "udp_seq_ops", "tty_drivers", "proc_root"]
+                 "tcp4_seq_ops", "udp_seq_ops", "tty_drivers", "proc_root", "inet_sock", "init_mm"]
+        #query_cmd = ["tcp4_seq_ops", "udp_seq_ops", "tty_drivers", "proc_root"]
         query_object = {"init_task": "task_struct", "init_fs": "fs_struct", "modules": "module", 
                     "mount_hashtable": "mount_hash",
-                    "neigh_tables": "neigh_table", "iomem_resource": "resource",
+                    "neigh_tables": "neigh_tables", "iomem_resource": "resource",
                     "tcp4_seq_ops": "seq_operations", "udp_seq_ops": "seq_operations",
                     "tty_drivers": "tty_driver",
                     "proc_root": "proc_dir_entry",
                     "idt_table": "gate_struct",
-                    "module_kset": "kset"}
+                    "module_kset": "kset",
+                    "inet_sock": "inet_sock",
+                    "init_mm": "mm_struct"}
     symbol_table = {}
 
     with open(symbol_file, 'r') as symbol:
@@ -195,6 +200,7 @@ def main():
                 #Need to add the KASLR shift
                 symbol_table[line[index:].strip()] = int(line[:line.find('\t')][:-1], 16) + prolog_query.shift
             line = symbol.readline()
+    symbol_table["inet_sock"] = 0xffff8c7a578a1c00
     for item in symbol_table.keys():
         print item, symbol_table[item], hex(symbol_table[item])
     '''
@@ -222,8 +228,9 @@ def main():
             paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
         if query == "neigh_tables":
             #This works for Linux kernel 3.19 and newer
-            addr = prolog_query.read_memory(int(paddr), 8)
-            paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
+            #addr = prolog_query.read_memory(int(paddr)+8, 8)
+            #paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
+            pass
         if query == "tty_drivers":
             addr = prolog_query.read_memory(int(paddr), 8)
             paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
@@ -232,6 +239,8 @@ def main():
         if query == "idt_table":
             addr = prolog_query.read_memory(int(paddr), 8)
             paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
+        if query == "init_task":
+            paddr = prolog_query.find_task_struct(paddr)
 
         prolog_query.start_query(int(paddr), query_object[query])
     #paddr = 0xbf22fa0

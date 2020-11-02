@@ -1,18 +1,10 @@
-gid ['8']
-cred ['0']
-uid ['4']
-egid ['24']
-euid ['20']
-time for cred 0.0
-false positive 0.0 true positive 4.0 precision 1.0
- 
 d_name ['32']
 d_subdirs ['144']
 d_inode ['48']
 parent ['24']
 d_iname ['56']
 dchild ['128']
-dentry ['17', '31', '44', '56', '66', '76']
+dentry ['17', '31', '44']
 time for dentry 17.0
 false positive 0.0 true positive 6.0 precision 1.0
  
@@ -26,89 +18,14 @@ I_mtime_addr ['104']
 I_ctime_addr ['120']
 I_mapping_addr ['48']
 I_mode_addr ['0']
-inode ['3', '5']
 I_sb_addr ['40']
-time for inode 3.0
-false positive 2.0 true positive 11.0 precision 0.846153846154
- 
-Start_addr ['0']
-resource ['3']
-Name_addr ['16']
-Child_addr ['56']
-End_addr ['8']
-time for resource 3.0
-false positive 0.0 true positive 4.0 precision 1.0
- 
-f_op ['40']
-file ['2', '3']
-f_path ['16']
-time for file 2.0
-false positive 0.0 true positive 2.0 precision 1.0
- 
-core_size ['384']
-kp ['72']
-name ['16']
-module ['1']
-list ['0']
-core_text_size ['388']
-core_base ['376']
-time for module 1.0
-false positive 0.0 true positive 6.0 precision 1.0
- 
-arg_start ['288']
-pgd ['64']
-brk ['272']
-mmap_base ['32']
-mm_struct ['13']
-mmap ['0']
-start_stack ['280']
-start_brk ['264']
-time for mm_struct 13.0
-false positive 0.0 true positive 7.0 precision 1.0
- 
-dev_list ['80']
-net_device ['2', '4']
-ip_ptr ['752', '928']
-name ['0']
-time for net_device 2.0
-false positive 2.0 true positive 3.0 precision 0.6
- 
-vm_end ['8']
-vm_mm ['64']
-vm_start ['0']
-vm_file ['160']
-vm_pgoff ['152']
-vm_area_struct ['6', '12']
-vm_next ['16']
-vm_flag ['80', '112']
-time for vm_area_struct 6.0
-false positive 2.0 true positive 7.0 precision 0.777777777778
+false positive 1.0 true positive 11.0 precision 0.916666666667
  
 pwd ['40']
 Root ['24']
-fs_struct ['78']
-fs time ['78']
-time for fs_struct 78.0
+fs_struct ['46']
+fs time ['46']
+time for fs_struct 46.0
 false positive 0.0 true positive 3.0 precision 1.0
  
-mnt_devname ['128']
-mnt_child ['96']
-mnt_hash ['0']
-mnt_parent ['16']
-mount ['7', '10']
-mnt_list ['136']
-time for mount 7.0
-false positive 0.0 true positive 5.0 precision 1.0
- 
-task_struct ['73']
-tasks ['1904']
-comm ['2584']
-active_mm_struct ['1992']
-parent ['2184']
-pid ['2156']
-group_leader ['2224']
-cred ['2576']
-time for task_struct 73.0
-false positive 0.0 true positive 7.0 precision 1.0
- 
-final result: tp: 65.0 fp: 6.0 precision 0.915492957746 time 205.0
+final result: tp: 20.0 fp: 1.0 precision 0.994117647059 time 63.0
