@@ -24,8 +24,26 @@ class AddressSpaceARM(linux.ArmAddressSpace):
         else:
             print "No ELF headers"
             self.has_elf_header = False
+        # Identify Linux version
+        version_idx = self.mem.find("Linux version") + len("Linux version ")
+        if version_idx:
+            self.mem.seek(version_idx)
+            version = self.mem.read(8)
+            index = version.index('.')
+            index2 = version[index+1:].index('.')
+            self.version = version[:index+index2+1]
+            print "Linux version", self.version
+        else:
+            print "[Error] - cannot identify Linux version"
+            self.version = 0
+        self.extract_info(self.vtop(0xffffffc0010f5cf0), "./tmp")
 
         self.image_name = os.path.basename(mem_path)
+        if not os.path.exists(self.image_name + '_symbol_table'):
+            self.find_kallsyms_address_pre_46_arm()
+
+        self.shift = self.find_KASLR_shift("kallsyms_on_each_symbol")
+        
         '''
         store_dtb = "./" + self.image_name + "_dtb"
         try: 
@@ -54,6 +72,39 @@ class AddressSpaceARM(linux.ArmAddressSpace):
         print('%s\t%s' %(strftime("%Y-%m-%d %H:%M:%S", gmtime()), message))
         sys.stdout.flush()
 
+    def find_KASLR_shift(self, target):
+        location = 0
+        symbol_file = self.image_name + "_symbol_table"
+        self.log("start search KASLR shift")
+        for step in range(0, self.mem.size(), 4096):
+            page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
+            if not page:
+                continue
+            for idx in range(0, 4096, 8):
+                #print hex(step+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
+                if target in page[idx:idx+2*len(target)]:
+                    #print "found ", target, hex(step+idx), page[idx-16:idx+32]
+                    for tmpidx in range(idx, idx+2*len(target), 1):
+                        if target == page[tmpidx:tmpidx+len(target)]:
+                            print "found ", target, hex(step+tmpidx), page[idx-16:idx+32]
+                            location = step+tmpidx
+                            with open(symbol_file, 'r') as symbol:
+                                line = symbol.readline()
+                                while line:
+                                    index = line.find('\t')
+                                    if "__kstrtab_"+target in line[index:].strip():
+                                        print "find", line[index:].strip()
+                                        print "virtual to physical shift:", hex(int(line[:line.find('\t')][:-1], 16) - location)
+                                        self.log("end search KASLR shift")
+                                        return int(line[:line.find('\t')][:-1], 16) - location
+                                    line = symbol.readline()
+                            return 0
+                            
+                        if location:
+                            break
+
+        self.log("end search KASLR shift")
+
     def read_memory(self, paddr, length):
         # Comment out for testing
         
@@ -80,6 +131,8 @@ class AddressSpaceARM(linux.ArmAddressSpace):
         return value
 
     def vtop(self, vaddr):
+        if vaddr == 0xffffffffffffffff:
+            return None
         if vaddr & 0xffffffc000000000 == 0xffffffc000000000:
             paddr = vaddr - 0xffffffbffda04800
             return paddr
@@ -204,6 +257,59 @@ class AddressSpaceARM(linux.ArmAddressSpace):
             output.write("\t\t[0, 0]\n]).\n")
         
         return valid_pointer
+
+    def find_task_struct(self, paddr):
+        #init_task = self.vtop(vaddr)
+        page = self.read_memory(paddr, 0x200 * 8)
+        value = struct.unpack("<512Q", page)
+        
+        for item in range(len(value)):
+            if "swapper" in page[item*8:(item+1)*8]:
+                print "found swapper", item*8
+                break
+        comm_offset = item*8
+        for item in range(len(value)):
+            num = value[item]
+            target_addr = self.vtop(value[item])
+            if not target_addr:
+                continue
+            if target_addr == paddr+item*8:
+                continue
+            comm = self.read_memory(target_addr -item*8 + comm_offset, 8)
+            print [c for c in comm]
+            if all(ord(c) >= 36 and ord(c) <= 122 or ord(c)==0 for c in comm):
+                if len(comm.replace('\x00', '')) >= 4:
+                    print "found task", item*8, comm
+                    return self.vtop(value[item+1])-item*8
+        task_offset = item*8
+
+    # This function is to find the address of target process name
+    def find_string(self, target):
+        '''
+        This function is to find the address of the target process name in the memory.
+        It is used to facilitate find_tasks method.
+        '''
+        for step in range(0, self.mem.size(), 4096):
+            page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
+            if not page:
+                continue
+            for idx in range(0, 4096, 8):
+                #print hex(step+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
+                if target in page[idx-8:idx+len(target)+8]:
+                    print "found ", target, hex(step+idx), page[idx-16:idx+32]
+                    #for tmpidx in range(0, 4096, 8):
+                    #    print hex(step+tmpidx), hex(self.is_user_pointer(page[tmpidx:tmpidx+8], 0))
+                    #return step
+            
+        print "[-] Error: target not found", self.read_memory(0x15c04c0+1192, 8)
+        '''
+        page = self.read_memory(0x15c0000, 0x200 * 8)
+        
+        for idx in range(0, 4096, 8):
+            print hex(0x15c0000+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
+        '''
+        exit(0)
+
     def find_kallsyms_address_pre_46_arm(self):
         '''
             [-] For Linux kernel before 4.6
@@ -584,7 +690,7 @@ class AddressSpaceARM(linux.ArmAddressSpace):
                                 line = symbol.readline()
                                 while line:
                                     index = line.find('\t')
-                                    if "__kstrtab_kallsyms_on_each_symbol" in line[index:].strip():
+                                    if "__kstrtab_" + target in line[index:].strip():
                                         print "find", line[index:].strip()
                                         print "virtual to physical shift:", hex(int(line[:line.find('\t')][:-1], 16) - location)
                                     line = symbol.readline()

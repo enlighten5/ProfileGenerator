@@ -26,7 +26,6 @@ class PrologQuery(rm.AddressSpace):
 
     def start_query(self, paddr, query):
         self.log("construct kb \t- " + query)
-        #self.construct_kb(paddr, "./knowledge/init_rules.pl", "./knowledge/start_query.pl")
         self.construct_kb(paddr, "./knowledge/query_rules.pl", "./knowledge/test_query.pl")
     
         self.log("start query \t- " + query)
@@ -35,17 +34,11 @@ class PrologQuery(rm.AddressSpace):
         count = 0
         self.log("finish kb \t- " + query)
 
-        #query_cmd = "possible_anything_no_order(Base_addr)"
-        #query_cmd = "possible_task_struct(" + str(paddr) + ")" 
-        #query_cmd = "query_task_struct(" + str(paddr) + ")" 
-        #query_cmd = "query_module(" + str(paddr) + ")" 
-        query_cmd = "query_mount(" + str(paddr) + ")" 
-        query_cmd = "query_net_device(" + str(paddr) + ")" 
         query_cmd = "query_" + query + "(" + str(paddr) + ")" 
         for s in p.query(query_cmd, catcherrors=False):
             count += 1
-            #if count:
-            #    break
+            if count:
+                break
             #print(s["Base_addr"])
         print "count result:", count
         self.log("finish query \t- " + query)
@@ -134,7 +127,6 @@ def main():
     #a mount struct
     paddr = 0x19a2d600
     #net_device addr
-    paddr = prolog_query.vtop(0xffff9584ded80000)
     #inet_sock
     #paddr = prolog_query.vtop(0xffff9584ded45f80)
     #iomem_resource
@@ -142,8 +134,9 @@ def main():
     #dentry
     paddr = 0x18ef7a80
     #init_fs
-    paddr = prolog_query.vtop(0xffffffff81eb8640 + 0x1c400000)
     paddr = 0x38bc070
+    #paddr = prolog_query.find_task_struct(paddr)
+    #prolog_query.find_string('kthreadd')
     #prolog_query.start_query(int(paddr), "test")
     '''
     What global symbols are needed to start the logic inference?
@@ -163,8 +156,8 @@ def main():
     # pre_4.18
     if float(prolog_query.version)*100 < 418:
         query_cmd = ["init_task", "init_fs", "modules", "mount_hashtable", "neigh_tables", "iomem_resource",
-                 "tcp4_seq_afinfo", "udp4_seq_afinfo", "tty_drivers", "proc_root", "inet_sock", "init_mm"]
-        #query_cmd = ["neigh_tables"]
+                 "tcp4_seq_afinfo", "udp4_seq_afinfo", "tty_drivers", "proc_root", "inet_sock"]
+        query_cmd = ["modules"]
         query_object = {"init_task": "task_struct", "init_fs": "fs_struct", "modules": "module", 
                     "mount_hashtable": "mount_hash",
                     "neigh_tables": "neigh_tables", "iomem_resource": "resource",
@@ -173,13 +166,12 @@ def main():
                     "proc_root": "proc_dir_entry",
                     "idt_table": "gate_struct",
                     "module_kset": "kset",
-                    "inet_sock": "inet_sock",
-                    "init_mm": "mm_struct"}
+                    "inet_sock": "inet_sock"}
     # after_4.18
     elif float(prolog_query.version)*100 >= 418:
         query_cmd = ["init_task", "init_fs", "modules", "mount_hashtable", "neigh_tables", "iomem_resource",
                  "tcp4_seq_ops", "udp_seq_ops", "tty_drivers", "proc_root", "inet_sock", "init_mm"]
-        #query_cmd = ["tcp4_seq_ops", "udp_seq_ops", "tty_drivers", "proc_root"]
+        #query_cmd = ["modules"]
         query_object = {"init_task": "task_struct", "init_fs": "fs_struct", "modules": "module", 
                     "mount_hashtable": "mount_hash",
                     "neigh_tables": "neigh_tables", "iomem_resource": "resource",
@@ -201,7 +193,7 @@ def main():
             if line[index:].strip() in query_cmd:
                 print "find", line[index:].strip()
                 #Need to add the KASLR shift
-                symbol_table[line[index:].strip()] = int(line[:line.find('\t')][:-1], 16) + prolog_query.shift
+                symbol_table[line[index:].strip()] = int(line[:line.find('\t')][:-1], 16) + prolog_query.v_shift
             line = symbol.readline()
     symbol_table["inet_sock"] = 0xffff8c7a578a1c00
     for item in symbol_table.keys():
@@ -225,7 +217,8 @@ def main():
         paddr = prolog_query.vtop(symbol_table[query])
         if query == 'modules':
             addr = prolog_query.read_memory(int(paddr), 8)
-            paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
+            #module list is the second field in module object, so minus 0x8 to get the initial address
+            paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0]) - 0x8
         if query == "mount_hashtable":
             addr = prolog_query.read_memory(int(paddr), 8)
             paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
@@ -244,41 +237,9 @@ def main():
             paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
         if query == "init_task":
             paddr = prolog_query.find_task_struct(paddr)
+            print "task:", hex(paddr)
 
         prolog_query.start_query(int(paddr), query_object[query])
-    #paddr = 0xbf22fa0
-    #prolog_query.start_query(int(paddr), "neigh_table")
-    #pid = os.fork()
-    #if pid > 0:
-        # start_query takes a number (dec or hex) as input, not string
-        #paddr = prolog_query.find_swapper_page()
-    #prolog_query.start_query(int(paddr), query)
-    #print os.environ["IMAGE_PATH"]
-        #prolog_query.pslist(paddr)
-    #else:
-    #    pass
-        #generate_result()
-
-    # Ubuntu_x64
-    #prolog_query.start_query(0x3810500)
-    # Linux-sample
-    #prolog_query.start_query(0x160d020)
-    # Debian
-    #prolog_query.start_query(0x14871f0)
-    # lubuntu_x64_ASLR
-    #prolog_query.start_query(0x11210500)
-    # 4.11
-    #prolog_query.start_query(0x13e104c0)
-    # 4.12
-    #prolog_query.start_query(0x1a4104c0)
-    # 4.13
-    #prolog_query.start_query(0x16210480)
-    # 4.14_2
-    #prolog_query.start_query(0x7610480)
-    # 4.18_2
-    #prolog_query.start_query(0x5c12740)
-    # 4.20 randstruct
-    #prolog_query.start_query(0x9413740)
 
 if __name__ == "__main__":
     main()

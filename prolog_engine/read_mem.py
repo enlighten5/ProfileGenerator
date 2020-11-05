@@ -93,7 +93,9 @@ class AddressSpace(linux.AMD64PagedMemory):
             sys.exit(1)
 
         try:
-            self.mem = mmap.mmap(f, 0, mmap.MAP_PRIVATE, mmap.PROT_READ)
+            #FIXME The second argument length should be the size of kernel. It only needs to load the kernel content. 
+            #0 is a special value indicating that the system should create a memory map large enough to hold the entire file.
+            self.mem = mmap.mmap(f, 0, mmap.MAP_SHARED, mmap.ACCESS_READ)
         except:
             print "Error mmap\n"
             sys.exit(1)
@@ -116,7 +118,7 @@ class AddressSpace(linux.AMD64PagedMemory):
             print "No ELF headers"
             self.has_elf_header = False
         # Identify Linux version
-        version_idx = self.mem.find("Linux version") + len("Linux version ")
+        version_idx = self.mem.find("Linux version 4") + len("Linux version ")
         if version_idx:
             self.mem.seek(version_idx)
             version = self.mem.read(8)
@@ -126,20 +128,34 @@ class AddressSpace(linux.AMD64PagedMemory):
             print "Linux version", self.version
         else:
             print "[Error] - cannot identify Linux version"
-            self.verbose = 0
+            self.version = 0
         vdtb_idx = self.mem.find("SYMBOL(swapper_pg_dir)=") + len("SYMBOL(swapper_pg_dir)=")
         if vdtb_idx-len("SYMBOL(swapper_pg_dir)=")>0:
             self.mem.seek(vdtb_idx)
-            dtb_vaddr = "0x" + self.mem.read(16)
-            print "dtb_vaddr", dtb_vaddr
+            self.dtb_vaddr = "0x" + self.mem.read(16)
+            print "dtb_vaddr", self.dtb_vaddr
         else:
             print "cannot find dtb_vaddr"
-            dtb_vaddr = "0xffffffffaee0a000"
+            self.dtb_vaddr = "0xffffffffaee0a000"
         #self.find_kallsyms_address_pre_46_arm()
         self.image_name = os.path.basename(mem_path)
         if not os.path.exists(self.image_name + '_symbol_table'):
             self.find_kallsyms_address()
-        #self.find_KASLR_shift("kallsyms_on_each_symbol")
+
+        if not os.path.exists(self.image_name + '_metadata'):
+            self.v_to_p_shift = self.find_KASLR_shift("kallsyms_on_each_symbol")
+            self.v_shift, self.dtb = self.find_v_to_p_shift()
+            with open(self.image_name + '_metadata', 'w') as metadata:
+                metadata.write(str(self.v_to_p_shift) + ' ')
+                metadata.write(str(self.v_shift) + ' ')
+                metadata.write(str(self.dtb))
+        else:
+            with open(self.image_name + '_metadata', 'r') as metadata:
+                line = metadata.readline().split(' ')
+                self.v_to_p_shift = int(line[0])
+                self.v_shift = int(line[1])
+                self.dtb = int(line[2])
+        #print "v_to_p_shift", hex(self.v_to_p_shift), "v_shift", hex(self.v_shift), "dtb", hex(self.dtb)
 
         store_dtb = "./" + self.image_name + "_dtb"
         g_dtb = 0
@@ -154,7 +170,7 @@ class AddressSpace(linux.AMD64PagedMemory):
                     g_dtb = None
         except IOError:
             g_dtb = None
-        
+        self.dtb = g_dtb
         if not g_dtb:
             try: 
                 with open(self.image_name + "_symbol_table", 'r') as fd:
@@ -260,11 +276,7 @@ class AddressSpace(linux.AMD64PagedMemory):
 
         #for item in runs:
         #    print item
-
         return runs
-
-
-
 
     def parse_system_map(self, path):
         with open(path, 'r') as system_map:
@@ -317,14 +329,11 @@ class AddressSpace(linux.AMD64PagedMemory):
         return value
 
     def read_memory(self, paddr, length):
-        # Comment out for testing
-
         if self.has_elf_header :
             paddr = self.translate(paddr)
             if not paddr:
                 #print "Error: translate failed.\n"
                 return None
-                #sys.exit(1)
         
         if self.mem.size() - paddr < length:
             print "Error: read out of bound memory.", hex(paddr), hex(self.mem.size())
@@ -526,7 +535,7 @@ class AddressSpace(linux.AMD64PagedMemory):
                 elif number < 0xffffffffffff:
                     str_content = content[item*8:(item+1)*8]
                     if all( ord(c) >= 36 and ord(c) <= 122 or ord(c)==0 for c in str_content ):
-                        if len(str_content.replace('\x00', '')) >= 4:
+                        if len(str_content.replace('\x00', '')) >= 3:
                             if self.verbose:
                                 print "[-] ", item*8, hex(paddr+item*8), "string: ", str_content, hex(number)
                             valid_stirng[item*8] = number
@@ -537,24 +546,26 @@ class AddressSpace(linux.AMD64PagedMemory):
                 elif number == 0xffffffffffffffff:
                     pass
                 else:
-                    # add for test randstruct
                     str_content = content[item*8:(item+1)*8]
-                    if all( ord(c) >= 32 and ord(c) <= 122 or ord(c)==0 or c=='\xff' for c in str_content ):
-                        if len(str_content.replace('\x00', '').replace('\xff', '')) > 4:
-                            if self.verbose:
-                                print "[-] ", item*8, hex(paddr+item*8), "string: ", str_content, hex(number)
-                            valid_stirng[item*8] = number
+                    char_count = 0
+                    for c in str_content:
+                        if ord(c) >= 32 and ord(c) <= 122:
+                            char_count += 1
+                    if char_count >= 4:
+                        if self.verbose:
+                            print "[-] ", item*8, hex(paddr+item*8), "string: ", str_content, hex(number)
+                        valid_stirng[item*8] = number
                     else:
                         if self.verbose:
                             print "[-] ", item*8, hex(paddr+item*8), "unknow pointer: ", hex(number), [c for c in content[item*8:item*8+8]], str_content
                         unknown_pointer[item*8] = number
+
                     
         value = struct.unpack("<1024I", content)
         for idx in range(len(value)):
             number = value[idx] 
-            # This value is very ad hoc
-            #print "int: ", hex(number), idx*4
-            if number < 0x7fff:
+            # This value is experimental
+            if number < 0x17fff:
                 #print "int: ", hex(number), idx*4
                 valid_int[idx*4] = number
 
@@ -563,7 +574,6 @@ class AddressSpace(linux.AMD64PagedMemory):
             keys = valid_pointer.keys()
             keys.sort()
             for key in keys:
-                #fact = "ispointer(" + hex(paddr) + "," + str(key) + "," + str(valid_pointer[key]) + ")." + "\n"
                 fact = "\t\t[" + hex(paddr + key) + "," + str(valid_pointer[key]) + "]," + "\n"
                 output.write(fact)
             output.write("\t\t[0, 0]\n]).\n")
@@ -572,7 +582,6 @@ class AddressSpace(linux.AMD64PagedMemory):
             keys = unknown_pointer.keys()
             keys.sort()
             for key in keys:
-                #fact = "unknownpointer(" + hex(paddr) + "," + str(key) + "," + str(unknown_pointer[key]) + ")." + "\n"
                 fact = "\t\t[" + hex(paddr + key) + "," + str(unknown_pointer[key]) + "]," + "\n"
                 output.write(fact)
             output.write("\t\t[0, 0]\n]).\n")
@@ -581,7 +590,6 @@ class AddressSpace(linux.AMD64PagedMemory):
             keys = valid_long.keys()
             keys.sort()
             for key in keys:
-                #fact = "islong(" + hex(paddr) + "," + str(key) + "," + str(valid_long[key]) + ")." + "\n"
                 fact = "\t\t[" + hex(paddr + key) + "," + str(valid_long[key]) + "]," + "\n"
                 output.write(fact)
             output.write("\t\t[0, 0]\n]).\n")
@@ -590,7 +598,6 @@ class AddressSpace(linux.AMD64PagedMemory):
             keys = valid_int.keys()
             keys.sort()
             for key in keys:
-                #fact = "isint(" + hex(paddr) + "," + str(key) + "," + str(valid_int[key]) + ")." + "\n"
                 fact = "\t\t[" + hex(paddr + key) + "," + str(valid_int[key]) + "]," + "\n"
                 output.write(fact)
             output.write("\t\t[0, 0]\n]).\n")
@@ -599,31 +606,11 @@ class AddressSpace(linux.AMD64PagedMemory):
             keys = valid_stirng.keys()
             keys.sort()
             for key in keys:
-                #fact = "isstring(" + hex(paddr) + "," + str(key) + "," + str(valid_stirng[key]) + ")." + "\n"
                 fact = "\t\t[" + hex(paddr + key) + "," + str(valid_stirng[key]) + "]," + "\n"
                 output.write(fact)
             output.write("\t\t[0, 0]\n]).\n")
         
         return valid_pointer
-
-    
-    def pslist(self, init):
-        init_addr = 123798656
-        while True:
-            content = self.read_memory(init_addr + 1976, 8)
-            value = struct.unpack("<Q", content)[0]
-            p_next_task = self.vtop(value)
-            if not p_next_task:
-                print "cannot find next task"
-                return
-            pname = self.read_memory(p_next_task - 1976 + 2656, 8)
-            init_addr = p_next_task - 1976
-            pid = self.read_memory(init_addr + 2232, 4)
-            pid = struct.unpack("<I", pid)[0]
-            print "next process", pname, "at", hex(init_addr), "with pid", pid
-            if init_addr == 123798656:
-                break
-
     
     def find_swapper_page(self):
         for step in range(0, self.mem.size(), 4096):
@@ -641,6 +628,13 @@ class AddressSpace(linux.AMD64PagedMemory):
     def find_KASLR_shift(self, target):
         location = 0
         symbol_file = self.image_name + "_symbol_table"
+        with open(symbol_file, 'r') as symbol:
+            line = symbol.readline()
+            while line:
+                index = line.find('\t')
+                if "__kstrtab_" + target in line[index:].strip():
+                    target_vaddr = int(line[:line.find('\t')][:-1], 16)
+                line = symbol.readline()
         self.log("start search KASLR shift")
         for step in range(0, self.mem.size(), 4096):
             page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
@@ -648,27 +642,39 @@ class AddressSpace(linux.AMD64PagedMemory):
                 continue
             for idx in range(0, 4096, 8):
                 #print hex(step+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
-                if target in page[idx:idx+2*len(target)]:
-                    #print "found ", target, hex(step+idx), page[idx-16:idx+32]
-                    for tmpidx in range(idx, idx+2*len(target), 1):
-                        if target == page[tmpidx:tmpidx+len(target)]:
-                            print "found ", target, hex(step+tmpidx), page[idx-16:idx+32]
-                            location = step+tmpidx
-                            with open(symbol_file, 'r') as symbol:
-                                line = symbol.readline()
-                                while line:
-                                    index = line.find('\t')
-                                    if "__kstrtab_"+target in line[index:].strip():
-                                        print "find", line[index:].strip()
-                                        print "virtual to physical shift:", hex(int(line[:line.find('\t')][:-1], 16) - location)
-                                    line = symbol.readline()
-                            self.log("end search KASLR shift")
-                            return
-                            
-                        if location:
-                            break
+                if not target in page[idx:idx+2*len(target)]:
+                    continue
+                #print "found ", target, hex(step+idx), page[idx-16:idx+32]
+                for tmpidx in range(idx, idx+2*len(target), 1):
+                    if target == page[tmpidx:tmpidx+len(target)]:
+                        #print "found ", target, hex(step+tmpidx), page[idx-16:idx+32]
+                        target_paddr = step + tmpidx
+                        break
+                if not target_vaddr & 0xffff == target_paddr & 0xffff:
+                    continue
+                self.log("end search KASLR shift")
+                return target_vaddr - target_paddr
+        self.log("[-] Error: cannot find KASLR shift")
 
-        self.log("end search KASLR shift")
+    def find_v_to_p_shift(self):
+        try: 
+            with open(self.image_name + "_symbol_table", 'r') as fd:
+                line = fd.readline()
+                while line:
+                    symbol_name = ["swapper_pg_dir", "init_level4_pgt", "init_top_pgt"]
+                    if any(c in line for c in symbol_name):
+                        g_dtb = int(line[:line.find('\t')][:-1], 16)
+                        #self.dtb = g_dtb - self.v_to_p_shift
+                        if self.dtb_vaddr:
+                            #self.v_shift = int(dtb_vaddr, 16) - g_dtb
+                            print "v_shift", hex(int(self.dtb_vaddr, 16) - g_dtb)
+                            return int(self.dtb_vaddr, 16) - g_dtb, g_dtb - self.v_to_p_shift
+                        else:
+                            print "Cannot find vaddr of dtb from the memory dump"
+                            return 0
+                    line = fd.readline()
+        except IOError:
+            print "[-] Error: cannot find symbol table"
             
     # This function is to find the address of target process name
     def find_string(self, target):
@@ -708,7 +714,6 @@ class AddressSpace(linux.AMD64PagedMemory):
                 comm = self.read_memory(phys_addr + (1488-item*8), 8)
                 print comm, item*8
     def find_task_struct(self, paddr):
-        #init_task = self.vtop(vaddr)
         page = self.read_memory(paddr, 0x200 * 8)
         value = struct.unpack("<512Q", page)
         
@@ -728,7 +733,7 @@ class AddressSpace(linux.AMD64PagedMemory):
             if all(ord(c) >= 36 and ord(c) <= 122 or ord(c)==0 for c in comm):
                 if len(comm.replace('\x00', '')) >= 4:
                     print "found task", item*8
-                    return self.vtop(value[item+1]) - item*8
+                    return self.vtop(value[item]) - item*8
         task_offset = item*8
     # This function is to find the init address of task structure. 
     # It starts from kthread and use the property of parent structure, which is swapper structure. 
@@ -775,7 +780,7 @@ class AddressSpace(linux.AMD64PagedMemory):
                     if len(comm.replace('\x00', '')) > 4:
                         #if self.verbose:
                         print "found next task at", comm , hex(addr + item * 8)
-                '''        
+                '''     
     def v(self, size, content):
         s = "<" + str(size/8) + "Q"
         value = struct.unpack(s, content)
@@ -946,15 +951,12 @@ class AddressSpace(linux.AMD64PagedMemory):
         self.log("start to find kernel symbols")
         kallsyms_address = 0
         found = 0
-        #for step in range(0x13b12450, 0x13b12450+4096, 4096):
-        #for step in range(0x13b12000, 0x13b12000+4096, 4096):
         for step in range(init_addr, self.mem.size(), 4096):
             page = self.read_memory(step, 0x200 * 8)
             if not page:
                 #print "no content available"
                 continue
             value = list(struct.unpack("<1024I", page))
-            #print [hex(i) for i in value]
             if value.count(0) > len(value)/2:
                 continue
             # Find the longest increasing or descending numbers
@@ -1019,12 +1021,14 @@ class AddressSpace(linux.AMD64PagedMemory):
         value = self.v(8, content)
         kallsyms_num_syms = value[0]
         print "kallsyms_num_syms", kallsyms_num_syms, [hex(int(ord(c))) for c in content]
-        if kallsyms_num_syms > 1200000:
+        if kallsyms_num_syms > 1200000 or kallsyms_num_syms == 0:
             self.find_kallsyms_address(kallsyms_relative_base)
             return
         # Then the init address of kallsyms_offsets can be found by 
         # kallsyms_relative_base - 0x8 - kallsyms_num_syms/2*8
-        kallsyms_offsets = kallsyms_relative_base - 0x8 - (kallsyms_num_syms/2*8)
+        if not kallsyms_num_syms%2 == 0:
+            kallsyms_num_syms += 1
+        kallsyms_offsets = kallsyms_relative_base - (kallsyms_num_syms/2*8)
         print "kallsyms_offsets", hex(kallsyms_offsets)
         
         # Now we have kallsyms_offsets and kallsyms_relative_base, we can
@@ -1279,8 +1283,6 @@ class AddressSpace(linux.AMD64PagedMemory):
         print "kallsyms_address", hex(kallsyms_address)
         # We have the symbol table. We can find kallsyms_address in the symbol list, which points to the init address
         # of the symbol table. kallsyms_num, kallsyms_token_index and kallsyms_token_table are adjacent. 
-
-
 
     def find_kallsyms_address_pre_46_32bit(self):
         '''
@@ -1899,10 +1901,6 @@ class AddressSpace(linux.AMD64PagedMemory):
         off = 0
         for index in range(size+1):
             off = self.kallsyms_expand_symbol(off, symbol_name, kallsyms_names, kallsyms_token_table, kallsyms_token_index_v)
-        #off = self.kallsyms_expand_symbol(off, kallsyms_names, kallsyms_token_table_v, kallsyms_token_index_v)
-
-
-
 
 class AddressSpace_test(linux.AMD64PagedMemory):
     def __init__(self, mem_path, dtb = 0):
@@ -1925,8 +1923,6 @@ class AddressSpace_test(linux.AMD64PagedMemory):
         self.offset = offset6
         self.mem_path = mem_path
         self.mem.seek(0)
-    
-
 
 def test():
     try:
@@ -2044,7 +2040,8 @@ def main():
     '''
     addr_space = AddressSpace(mem_path, 1)
     #addr_space = arm.AddressSpaceARM(mem_path, 1)
-
+    paddr = addr_space.vtop(0xffffffffac0fa370)
+    paddr = 0x386ca6c8-0x8
     '''
     tmp = addr_space.read_memory(paddr, 8)
     if not tmp:
@@ -2059,7 +2056,7 @@ def main():
         #addr_space.extract_info(paddr, "./tmp")
         #paddr += 4096
         size -= 1
-    #addr_space.extract_info(paddr, "./tmp")
+    addr_space.extract_info(paddr, "./tmp")
     #addr_space.extract_kallsyms_symbols([],0,0,93398,0,0)
     #addr_space.find_kallsyms_address()
     #addr_space.find_kallsyms_address_pre_46()

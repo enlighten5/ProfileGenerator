@@ -70,10 +70,11 @@ query_test(Base_addr) :-
            Group_leader_addr, Thread_group_addr, Real_cred_addr, Cred_addr, Comm_addr], #<),
     Tasks_addr #> Base_addr,
     Comm_addr #= Base_addr + 968,
+    Tasks_addr #= Base_addr + 544,
     tuples_in(Ptr_profile, Ptr),
     tuples_in(Str_profile, Str),
     tuples_in(Int_profile, Int),
-    labeling([enum], [Tasks_addr, Tasks_val, Comm_addr, Comm_val, Pid_addr, Tgid_addr]),
+    labeling([enum], [Tasks_addr, Tasks_val, Comm_addr, Comm_val]),
     Comm_offset #= Comm_addr - Base_addr,
     Tasks_offset #= Tasks_addr - Base_addr,
     Tasks_val #> 0,
@@ -123,19 +124,18 @@ query_task_struct(Base_addr) :-
     %Sibling next and prev  16
     Group_leader_addr #=< Child_addr +32,
     Cred_addr #= Real_cred_addr + 8,
-    MM2_addr #= Base_addr + 1992,
-    /*Comm_addr #= Base_addr + 1656,*/
-    Tasks_addr #= Base_addr + 1904,
+    /*MM2_addr #= Base_addr + 1992,
+    Comm_addr #= Base_addr + 1656,
+    Tasks_addr #= Base_addr + 1904,*/
 
 
     tuples_in(Ptr_profile, Ptr),
     tuples_in(Str_profile, Str),
     tuples_in(Int_profile, Int),
 
+    MM2_val #> 0,
     label([MM2_addr, MM2_val]),
     label([MM_addr, MM_val]),
-    % make query after labeling
-    MM2_val #> 0,
     integer(MM2_val),
     query_mm_struct(MM2_val),
     labeling([enum], [Tasks_addr, Tasks_val, Comm_addr, Comm_val, Pid_addr, Tgid_addr]),
@@ -174,7 +174,7 @@ query_task_struct(Base_addr) :-
     log("./profile/task_struct", "group_leader", Group_leader_addr, Base_addr),
     log("./profile/task_struct", "cred", Cred_addr, Base_addr),
     log("./profile/task_struct", "pid", Pid_addr, Base_addr),
-    log("./profile/task_struct", "task_struct", End, Start),
+    log("./profile/task_struct", "task_struct time", End, Start),
 
     print_nl('tasks offset', Tasks_offset),
     print_nl('tasks offset', Tasks_val),
@@ -250,7 +250,7 @@ query_module(Base_addr) :-
     log("./profile/module", "core_base", Core_base_addr, Base_addr),
     log("./profile/module", "core_size", Core_size_addr, Base_addr),
     log("./profile/module", "core_text_size", Core_text_size_addr, Base_addr),
-    log("./profile/module", "module", End, Start).
+    log("./profile/module", "module time", End, Start).
     %print_nl("Finished, total time", Time_past).
 
 query_mount_hash(Base_addr) :-
@@ -266,7 +266,7 @@ query_mount_hash(Base_addr) :-
     query_mount(Mount_val),
     statistics(real_time, [End|_]),
     log("./profile/mount_hash", "mount", Mount_addr, Base_addr),
-    log("./profile/mount_hash", "mount_hash", End, Start).
+    log("./profile/mount_hash", "mount_hash time", End, Start).
 
 query_net_device(Base_addr) :- 
     /*
@@ -320,7 +320,7 @@ query_net_device(Base_addr) :-
     log("./profile/net_device", "name", Name_addr, Base_addr),
     log("./profile/net_device", "ip_ptr", IP_ptr_addr, Base_addr),
     log("./profile/net_device", "dev_list", Dev_list_addr, Base_addr),
-    log("./profile/net_device", "time", End, Start).
+    log("./profile/net_device", "net_device time", End, Start).
 
 
 query_inet_sock(Base_addr) :-
@@ -396,7 +396,7 @@ query_inet_sock(Base_addr) :-
     log("./profile/inet_sock", "Sk_write_queue", Sk_write_queue_addr, Base_addr),
     log("./profile/inet_sock", "Skc_family", Skc_family_addr, Base_addr),
     log("./profile/inet_sock", "Sk_protocol", Sk_protocol_addr, Base_addr),
-    log("./profile/inet_sock", "time", End, Start).
+    log("./profile/inet_sock", "inet_sock time", End, Start).
 
 query_resource(Base_addr) :-
     /*
@@ -451,19 +451,25 @@ query_resource(Base_addr) :-
     log("./profile/resource", "End_addr", End_addr, Base_addr),
     log("./profile/resource", "Name_addr", Name_addr, Base_addr),
     log("./profile/resource", "Child_addr", Child_addr, Base_addr),
-    log("./profile/resource", "resource", End, Start).
+    log("./profile/resource", "resource time", End, Start).
 
 query_neigh_tables(Base_addr) :-
+    statistics(real_time, [Start|_]),
     pointer(Ptr),
     Ptr_profile = ([
         [Neigh_table_addr, Neigh_table_val]
     ]),
     tuples_in(Ptr_profile, Ptr),
-    Neigh_table_addr #< Base_addr + 16,
+    Neigh_table_addr #=< Base_addr + 32,
     labeling([enum], [Neigh_table_addr, Neigh_table_val]),
-    query_neigh_table(Neigh_table_val).
+    query_neigh_table(Neigh_table_val),
+
+    statistics(real_time, [End|_]),
+    log("./profile/neigh_tables", "neigh_table", Neigh_table_addr, Base_addr),
+    log("./profile/neigh_tables", "neigh_tables time", End, Start).
 
 query_seq_operations(Base_addr) :-
+    statistics(real_time, [Start|_]),
     /* Four successive function pointers */
     pointer(Ptr),
     Ptr_profile = ([
@@ -479,9 +485,14 @@ query_seq_operations(Base_addr) :-
     Start_val #> 0,
     Stop_val #> 0,
     Next_val #> 0,
-    Show_val #> 0.
+    Show_val #> 0,
+    statistics(real_time, [End|_]),
+    log("./profile/seq_operations", "seq_operations time", End, Start).
+
 
 query_tcp_seq_afinfo(Base_addr) :-
+    statistics(real_time, [Start|_]),
+
     pointer(Ptr),
     int(Int),
     Ptr_profile = ([
@@ -499,9 +510,13 @@ query_tcp_seq_afinfo(Base_addr) :-
     chain([Name_addr, Family_addr, F_ops_addr, Ops_addr], #<),
     
     labeling([enum], [Name_addr, Name_val]),
-    query_string_pointer(Name_val).
+    query_string_pointer(Name_val),
+    statistics(real_time, [End|_]),
+    log("./profile/tcp_seq_afinfo", "tcp_seq_afinfo time", End, Start).
 
 query_udp_seq_afinfo(Base_addr) :-
+    statistics(real_time, [Start|_]),
+
     pointer(Ptr),
     int(Int),
     Ptr_profile = ([
@@ -520,9 +535,13 @@ query_udp_seq_afinfo(Base_addr) :-
     chain([Name_addr, Family_addr, Udp_table_addr, F_ops_addr, Ops_addr], #<),
     
     labeling([enum], [Name_addr, Name_val]),
-    query_string_pointer(Name_val).
+    query_string_pointer(Name_val),
+    statistics(real_time, [End|_]),
+    log("./profile/udp_seq_afinfo", "udp_seq_afinfo time", End, Start).
 
 query_tty_driver(Base_addr) :-
+    statistics(real_time, [Start|_]),
+
     /* tty_driver remains unchanged, some rules are hardcoded. */
     pointer(Ptr),
     int(Int),
@@ -551,9 +570,13 @@ query_tty_driver(Base_addr) :-
             Num_addr, Ttys_addr, Tty_drivers_addr], #<),
     labeling([enum], [Driver_name_addr, Driver_name_val, Name_addr, Name_val]),
     query_string_pointer(Driver_name_val),
-    query_string_pointer(Name_val).
+    query_string_pointer(Name_val),
+    statistics(real_time, [End|_]),
+    log("./profile/tty_driver", "tty_driver time", End, Start).
 
 query_proc_dir_entry(Base_addr) :-
+    statistics(real_time, [Start|_]),
+
     pointer(Ptr),
     int(Int),
     long(Ulg),
@@ -580,7 +603,9 @@ query_proc_dir_entry(Base_addr) :-
     Proc_fops_val #> 0,
     %Proc_iops_val #> 0,
     %query_inode_operations(Proc_iops_val),
-    query_inode_operations(Proc_fops_val).
+    query_inode_operations(Proc_fops_val),
+    statistics(real_time, [End|_]),
+    log("./profile/proc_dir_entry", "proc_dir_entry time", End, Start).
 
 query_kset(Base_addr) :-
     /* skip */

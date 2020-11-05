@@ -17,21 +17,23 @@ def main():
     #extract_info("/home/zhenxiao/images/lubuntu_x64_ASLR.bin", 0x11210500, 4096)
     #fname = sys.argv[1]
     #parse_profile(fname)
-    result = []
+    result = {}
     tp = 0.0
     fp = 0.0
     total_t = 0.0
-    for file_name in os.listdir("./profile"):
-        result.append(parse_profile(file_name))
-    for index in range(len(result)):
-        tp += result[index][0]
-        fp += result[index][1]
-        total_t += result[index][2]
+    query = ['task_struct', 'fs_struct', 'module', 'mount_hash', 'neigh_tables', 'resource', 'tcp_seq_afinfo',
+             'udp_seq_afinfo', 'tty_driver', 'proc_dir_entry', 'gate_struct', 'kset', 'inet_sock']
+    folder = sys.argv[1]
+    for file_name in os.listdir(folder):
+        result[file_name] = parse_profile(folder, file_name)
+    for key in result.keys():
+        tp += result[key][0]
+        fp += result[key][1]
+        if key in query:
+            total_t += result[key][2]
+
     print "final result: tp:", tp, "fp:", fp, "precision", 169 / (169 + fp), "time", total_t
 
-
-
-    
     
 def test(file_path):
     with open(file_path) as f:
@@ -75,9 +77,9 @@ def parse_dwarf(file_path):
             line = dwarf.readline()
 
 
-def parse_profile(fname):
+def parse_profile(folder, fname):
     profile = {}
-    with open("./profile/" + fname, 'r') as p:
+    with open(folder + "/" + fname, 'r') as p:
         line = p.readline()
         while line:            
             line = line.strip('\n')
@@ -94,24 +96,28 @@ def parse_profile(fname):
     keys = profile.keys()
     for key in keys:
         print key, profile[key]
-    names = os.listdir("./profile/")
+    names = os.listdir(folder)
     fp = 0.0
     tp = 0.0
     total_t = 0.0
     for key in keys:
-        if key in fname:
+        if 'time' in key:
             #time
             total_t += float(profile[key][0])
-            print "time for", key, total_t
         else:
             if len(profile[key]) > 1:
                 fp += len(profile[key]) - 1
                 tp += 1
             else:
                 tp += 1
-    print "false positive", fp, "true positive", tp, "precision", tp/(tp+fp)
-    print " "
-    return tp, fp, total_t
+    if tp+fp == 0: 
+        print key, total_t
+        print " "
+        return 0, 0, total_t
+    else:
+        print "false positive", fp, "true positive", tp, "precision", tp/(tp+fp)
+        print " "
+        return tp, fp, total_t
 
 def is_user_pointer(buf, idx):
     dest = (ord(buf[idx+7]) << 56) + (ord(buf[idx+6]) << 48) + (ord(buf[idx+5]) << 40) + (ord(buf[idx+4]) << 32) + (ord(buf[idx+3]) << 24) + (ord(buf[idx+2]) << 16) + (ord(buf[idx+1]) << 8) + ord(buf[idx])

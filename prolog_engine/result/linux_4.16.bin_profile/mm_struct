@@ -1,0 +1,16 @@
+mmap:0
+mmap_base:32
+pgd:80
+start_brk:272
+brk:280
+start_stack:288
+arg_start:296
+mm_struct time:16
+mmap:0
+mmap_base:64
+pgd:80
+start_brk:272
+brk:280
+start_stack:288
+arg_start:296
+mm_struct time:32

@@ -66,8 +66,6 @@ possible_in_device(Base_addr) :-
     */
     pointer(Ptr),
     int(Int),
-    log("./profile/debug", "in_device", Ifa_list_val, 0),
-
     Ptr_profile = ([
         [Dev_addr, Dev_val],
         [Ifa_list_addr, Ifa_list_val]
@@ -167,8 +165,8 @@ possible_mm_struct(Current_addr) :-
     log("./profile/mm_struct", "start_brk", Start_brk_addr, Current_addr),
     log("./profile/mm_struct", "brk", Brk_addr, Current_addr),
     log("./profile/mm_struct", "start_stack", Start_stack_addr, Current_addr),
-    log("./profile/mm_struct", "arg_start", ARG_start_addr, Current_addr).
-    %log("./profile/mm_struct", "mm_struct", End, Start).
+    log("./profile/mm_struct", "arg_start", ARG_start_addr, Current_addr),
+    log("./profile/mm_struct", "mm_struct time", End, Start).
 
 
 possible_vm_area_struct(Base_addr, MM_addr) :-
@@ -223,8 +221,8 @@ possible_vm_area_struct(Base_addr, MM_addr) :-
     log("./profile/vm_area_struct", "vm_mm", Vm_mm_addr, Base_addr),
     log("./profile/vm_area_struct", "vm_flag", VM_flag_addr, Base_addr),
     log("./profile/vm_area_struct", "vm_pgoff", VM_pgoff_addr, Base_addr),
-    log("./profile/vm_area_struct", "vm_file", VM_file_addr, Base_addr).
-    %log("./profile/vm_area_struct", "vm_area_struct", End, Start).
+    log("./profile/vm_area_struct", "vm_file", VM_file_addr, Base_addr),
+    log("./profile/vm_area_struct", "vm_area_struct time", End, Start).
 
 check_vm_area_struct(Base_addr, Level) :-
     process_create(path('python'),
@@ -276,8 +274,8 @@ possible_vm_file(Base_addr) :-
     statistics(real_time, [End|_]),
 
     log("./profile/file", "f_path", Vfs_mount_addr, Base_addr),
-    log("./profile/file", "f_op", F_op_addr, Base_addr).
-    %log("./profile/file", "file", End, Start).
+    log("./profile/file", "f_op", F_op_addr, Base_addr),
+    log("./profile/file", "file time", End, Start).
 
 query_file_operation(Base_addr) :-
     process_create(path('python'),
@@ -338,6 +336,7 @@ possible_dentry(Base_addr) :-
     statistics(real_time, [Start|_]),
     pointer(Ptr),
     string_val(Str),
+    long(Ulg),
     Ptr_profile = [
         [Dparent_addr, Dparent_val],
         [Dname_addr, Dname_val],
@@ -349,28 +348,36 @@ possible_dentry(Base_addr) :-
     Str_profile = [
         [D_iname_addr, D_iname_val]
     ],
+    Ulong_profile = [
+        [Dname_len_addr, Dname_len_val]
+    ],
     tuples_in(Ptr_profile, Ptr),
     tuples_in(Str_profile, Str),
+    tuples_in(Ulong_profile, Ulg),
     Dparent_addr #> Base_addr,
-    chain([Dparent_addr, Dname_addr, D_inode_addr, D_iname_addr, 
+    Dname_addr #= Dname_len_addr + 8,
+    chain([Dparent_addr, Dname_len_addr, Dname_addr, D_inode_addr, D_iname_addr, 
             D_op_addr, Dchild_addr, D_subdirs_addr], #<),
     D_subdirs_addr #= Dchild_addr + 16,
     D_subdirs_addr #< Base_addr + 200,
     Dparent_val #> 0,
+    log("./profile/debug", "dentry", 0, 0),
     labeling([enum], [Dname_addr, Dname_val]),
     query_string_pointer(Dname_val),
     labeling([enum], [D_iname_addr, D_iname_val]),
     D_iname_offset #= D_iname_addr - Base_addr,
     Dname_offset #= Dname_addr - Base_addr,
+    log("./profile/debug", "dentry2", 0, 0),
     labeling([enum], [Dparent_addr, Dparent_val]),
     Parent_dname #= Dparent_val + Dname_offset,
     process_create(path('python'),
-                    ['subquery.py', Parent_dname, "name_pointer", Dname_offset],
+                    ['subquery.py', Parent_dname, "name_pointer", 0],
                     [stdout(pipe(In))]),
     read_string(In, Len, X),
     string_codes(X, Result),
     close(In),
     isTrue(Result),
+    log("./profile/debug", "dentry3", Dname_offset, 0),
 
     labeling([enum], [D_inode_addr, D_inode_val]),
     query_inode(D_inode_val),
@@ -398,8 +405,8 @@ possible_dentry(Base_addr) :-
     log("./profile/dentry", "d_inode", D_inode_addr, Base_addr),
     log("./profile/dentry", "d_iname", D_iname_addr, Base_addr),
     log("./profile/dentry", "dchild", Dchild_addr, Base_addr),
-    log("./profile/dentry", "d_subdirs", D_subdirs_addr, Base_addr).
-    %log("./profile/dentry", "dentry", End, Start).
+    log("./profile/dentry", "d_subdirs", D_subdirs_addr, Base_addr),
+    log("./profile/dentry", "dentry time", End, Start).
 
 query_inode(Base_addr) :-
     process_create(path('python'),
@@ -457,7 +464,6 @@ possible_inode(Base_addr) :-
     I_mode_addr #= Base_addr,
     I_mode_val #> 0,
     I_gid_addr #= I_mode_addr + 8,
-    %I_op_addr #= Base_addr + 32,
     I_op_addr #=< Base_addr + 32,
     I_op_val #> 0,
     labeling([enum], [I_op_addr, I_op_val]),
@@ -491,8 +497,8 @@ possible_inode(Base_addr) :-
     log("./profile/inode", "I_atime_addr", I_atime_addr, Base_addr),
     log("./profile/inode", "I_mtime_addr", I_mtime_addr, Base_addr),
     log("./profile/inode", "I_ctime_addr", I_ctime_addr, Base_addr),
-    log("./profile/inode", "I_fop_addr", I_fop_addr, Base_addr).
-    %log("./profile/inode", "inode", End, Start).
+    log("./profile/inode", "I_fop_addr", I_fop_addr, Base_addr),
+    log("./profile/inode", "inode time", End, Start).
 
 
 query_inode_operations(Base_addr) :-
@@ -618,7 +624,7 @@ possible_cred(Base_addr) :-
     %tuples_in(Ulong_profile, Ulg),
     statistics(real_time, [End|_]),
     labeling([enum], [Addr1, Addr2, Addr5, Addr6]),
-    log("./profile/cred", "cred", End, Start),
+    log("./profile/cred", "cred time", End, Start),
     log('./profile/cred', "uid", Addr1, Base_addr),
     log('./profile/cred', "gid", Addr2, Base_addr),
     log('./profile/cred', "euid", Addr5, Base_addr),
@@ -671,7 +677,7 @@ possible_fs_struct(Base_addr) :-
     log("./profile/fs_struct", "fs time", End, Start),
     log('./profile/fs_struct', "Root", Root_addr, Base_addr),
     log('./profile/fs_struct', "pwd", PWD_addr, Base_addr),
-    log('./profile/fs_struct', "fs_struct", End, Start).
+    log('./profile/fs_struct', "fs_struct time", End, Start).
 
 possible_mount(Base_addr) :-
     /* struct hlist_head mnt_hash;
@@ -738,9 +744,10 @@ possible_mount(Base_addr) :-
     log("./profile/mount", "mnt_child", Mnt_child_addr, Base_addr),
     log("./profile/mount", "mnt_devname", Mnt_devname_addr, Base_addr),
     log("./profile/mount", "mnt_list", Mnt_list_addr, Base_addr),
-    log("./profile/mount", "mount", End, Start).
+    log("./profile/mount", "mount time", End, Start).
 
 possible_neigh_table(Base_addr) :- 
+    statistics(real_time, [Start|_]),
     /* nht at offset 464 */
     pointer(Ptr),
     Ptr_profile = ([
@@ -750,7 +757,11 @@ possible_neigh_table(Base_addr) :-
     Nht_addr #>= Base_addr + 448,
     Nht_addr #=< Base_addr + 472,
     labeling([enum], [Nht_addr, Nht_val]),
-    query_neigh_hash_table(Nht_val).
+    query_neigh_hash_table(Nht_val),
+    statistics(real_time, [End|_]),
+    log("./profile/neigh_table", "nht", Nht_addr, Base_addr),
+    log("./profile/neigh_table", "neigh_table time", End, Start).
+
 
 possible_neigh_hash_table(Base_addr) :-
     /* neighbour **hash_buckets */
@@ -760,6 +771,7 @@ possible_neigh_hash_table(Base_addr) :-
     ]),
     tuples_in(Ptr_profile, Ptr),
     Hash_buckest_addr #= Base_addr,
+    %Hash_buckest_addr #=< Base_addr + 32,
     labeling([enum], [Hash_buckest_addr, Hash_buckets_val]),
     process_create(path('python'),
                     ['subquery.py', Hash_buckets_val, "hash_buckets"],
@@ -767,7 +779,8 @@ possible_neigh_hash_table(Base_addr) :-
     read_string(In, Len, X),
     string_codes(X, Result),
     close(In),
-    isTrue(Result).
+    isTrue(Result),
+    log("./profile/debug", "neigh_hash_table2", 0, 0).
 
 possible_hash_buckets(Base_addr) :-
     /* hash_buckets is an array of neighbour pointer 
@@ -790,6 +803,8 @@ possible_hash_buckets(Base_addr) :-
     isTrue(Result).
 
 possible_neighbour(Base_addr) :-
+    statistics(real_time, [Start|_]),
+
     /* net_device *dev at offset 368 */
     pointer(Ptr),
     Ptr_profile = ([
@@ -805,8 +820,10 @@ possible_neighbour(Base_addr) :-
     read_string(In, Len, X),
     string_codes(X, Result),
     close(In),
-    isTrue(Result).
-
+    isTrue(Result),
+    statistics(real_time, [End|_]),
+    log("./profile/neighbour", "dev", Dev_addr, Base_addr),
+    log("./profile/neighbour", "neighbour time", End, Start).
 
 possible_net_device(Base_addr) :- 
     /*
@@ -850,19 +867,17 @@ possible_net_device(Base_addr) :-
     IP_ptr_addr #= _atalk_ptr_addr + 8,
     IP_ptr_addr #< Base_addr + 1000,
     _ip6_ptr_addr #= IP_ptr_addr + 16,
+    
 
 
     /* dev_list offset can be hardcoded since it remains the same */
     Dev_list_addr #= Base_addr + 80,
     labeling([enum], [Name_addr, Dev_list_addr, Dev_list_val]),
-    log("./profile/debug", "net_device", Name_addr, Base_addr),
     /* do not have a good constrain to narrow down ip_ptr, use its rough offset
        to reduce the search space. 
-     */
-    IP_ptr_addr #= Base_addr + 760,
-    log("./profile/debug", "net_device2", Name_addr, Base_addr),
-
-    IP_ptr_addr #> Base_addr + 700,
+     */ 
+    IP_ptr_addr #>= Base_addr + 760,
+    IP_ptr_addr #=< Base_addr + 776,
     IP_ptr_val #> 0,
 
     labeling([enum], [IP_ptr_addr, IP_ptr_val]),
@@ -876,7 +891,7 @@ possible_net_device(Base_addr) :-
     log("./profile/net_device", "name", Name_addr, Base_addr),
     log("./profile/net_device", "ip_ptr", IP_ptr_addr, Base_addr),
     log("./profile/net_device", "dev_list", Dev_list_addr, Base_addr),
-    log("./profile/net_device", "net_device", End, Start).
+    log("./profile/net_device", "net_device time", End, Start).
 
 query_in_device(IP_ptr_val) :-
     process_create(path('python'),

@@ -1,0 +1,32 @@
+vm_start:0
+vm_end:8
+vm_next:16
+vm_mm:64
+vm_flag:80
+vm_pgoff:152
+vm_file:160
+vm_area_struct time:9
+vm_start:0
+vm_end:8
+vm_next:16
+vm_mm:64
+vm_flag:112
+vm_pgoff:152
+vm_file:160
+vm_area_struct time:16
+vm_start:0
+vm_end:8
+vm_next:16
+vm_mm:64
+vm_flag:80
+vm_pgoff:152
+vm_file:160
+vm_area_struct time:8
+vm_start:0
+vm_end:8
+vm_next:16
+vm_mm:64
+vm_flag:112
+vm_pgoff:152
+vm_file:160
+vm_area_struct time:15

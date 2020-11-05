@@ -1,0 +1,24 @@
+I_mode_addr:0
+I_uid_addr:4
+I_gid_addr:8
+I_op_addr:32
+I_sb_addr:40
+I_mapping_addr:48
+I_size_addr:80
+I_atime_addr:88
+I_mtime_addr:104
+I_ctime_addr:120
+I_fop_addr:224
+inode time:4
+I_mode_addr:0
+I_uid_addr:4
+I_gid_addr:8
+I_op_addr:32
+I_sb_addr:40
+I_mapping_addr:48
+I_size_addr:80
+I_atime_addr:88
+I_mtime_addr:104
+I_ctime_addr:120
+I_fop_addr:352
+inode time:6
