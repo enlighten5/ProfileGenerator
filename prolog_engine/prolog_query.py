@@ -33,7 +33,7 @@ class PrologQuery(rm.AddressSpace):
         p.consult("./knowledge/test_query.pl")
         count = 0
         self.log("finish kb \t- " + query)
-
+        current = time.time()
         query_cmd = "query_" + query + "(" + str(paddr) + ")" 
         for s in p.query(query_cmd, catcherrors=False):
             count += 1
@@ -41,6 +41,7 @@ class PrologQuery(rm.AddressSpace):
                 break
             #print(s["Base_addr"])
         print "count result:", count
+        print "total time:", query, time.time() - current
         self.log("finish query \t- " + query)
 
 
@@ -156,8 +157,8 @@ def main():
     # pre_4.18
     if float(prolog_query.version)*100 < 418:
         query_cmd = ["init_task", "init_fs", "modules", "mount_hashtable", "neigh_tables", "iomem_resource",
-                 "tcp4_seq_afinfo", "udp4_seq_afinfo", "tty_drivers", "proc_root", "inet_sock"]
-        query_cmd = ["modules"]
+                 "tcp4_seq_afinfo", "udp4_seq_afinfo", "tty_drivers", "proc_root"]
+        query_cmd = ["init_task"]
         query_object = {"init_task": "task_struct", "init_fs": "fs_struct", "modules": "module", 
                     "mount_hashtable": "mount_hash",
                     "neigh_tables": "neigh_tables", "iomem_resource": "resource",
@@ -170,8 +171,8 @@ def main():
     # after_4.18
     elif float(prolog_query.version)*100 >= 418:
         query_cmd = ["init_task", "init_fs", "modules", "mount_hashtable", "neigh_tables", "iomem_resource",
-                 "tcp4_seq_ops", "udp_seq_ops", "tty_drivers", "proc_root", "inet_sock", "init_mm"]
-        #query_cmd = ["modules"]
+                 "tcp4_seq_ops", "udp_seq_ops", "tty_drivers", "proc_root", "inet_sock"]
+        #query_cmd = ["init_task"]
         query_object = {"init_task": "task_struct", "init_fs": "fs_struct", "modules": "module", 
                     "mount_hashtable": "mount_hash",
                     "neigh_tables": "neigh_tables", "iomem_resource": "resource",

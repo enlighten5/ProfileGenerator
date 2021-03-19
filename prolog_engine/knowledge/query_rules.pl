@@ -1,4 +1,5 @@
 :- use_module(library(clpfd)).
+:- table query_task_struct/1.
 
 isTrue([X, _]):-
     X == 49.
@@ -14,6 +15,11 @@ log(File_name, Name, Addr, Base):-
     write(Stream, Offset),
     nl(Stream),
     close(Stream).
+
+print_time(Name, Start_time) :-
+    get_time(Now),
+    Time_past is Now - Start_time,
+    print_nl(Name, Time_past).
 
 start_query(Base_addr) :- 
     pointer(Ptr),
@@ -108,10 +114,10 @@ query_task_struct(Base_addr) :-
         [Pid_addr, Pid_val],
         [Tgid_addr, Tgid_val]    
     ]),
-    chain([Tasks_addr, Tasks2_addr, MM_addr, MM2_addr, Pid_addr, Tgid_addr, Real_parent_addr, Parent_addr , Child_addr, 
-           Group_leader_addr, Thread_group_addr, Real_cred_addr, Cred_addr, Comm_addr], #<),
+    
     %MM2_addr #> Base_addr + 1000,
     MM2_addr #= MM_addr + 8,
+    MM2_val #> 0,
     Tasks_addr #> MM2_addr - 100,
     Tasks2_addr #= Tasks_addr + 8,
 
@@ -127,23 +133,29 @@ query_task_struct(Base_addr) :-
     /*MM2_addr #= Base_addr + 1992,
     Comm_addr #= Base_addr + 1656,
     Tasks_addr #= Base_addr + 1904,*/
-
+    chain([Tasks_addr, Tasks2_addr, MM_addr, MM2_addr, Pid_addr, Tgid_addr, Real_parent_addr, Parent_addr , Child_addr, 
+           Group_leader_addr, Thread_group_addr, Real_cred_addr, Cred_addr, Comm_addr], #<),
 
     tuples_in(Ptr_profile, Ptr),
     tuples_in(Str_profile, Str),
     tuples_in(Int_profile, Int),
+    %print_time('before label mm', Current),
 
-    MM2_val #> 0,
     label([MM2_addr, MM2_val]),
     label([MM_addr, MM_val]),
-    integer(MM2_val),
+    %print_time('after label mm', Current),
+    %query_mm_struct_arm(MM2_val),
     query_mm_struct(MM2_val),
-    labeling([enum], [Tasks_addr, Tasks_val, Comm_addr, Comm_val, Pid_addr, Tgid_addr]),
+    %print_time('after query mm', Current),
+
+    labeling([], [Tasks_addr, Tasks_val, Comm_addr, Comm_val, Pid_addr, Tgid_addr]),
 
     Comm_offset #= Comm_addr - Base_addr,
     Tasks_offset #= Tasks_addr - Base_addr,
     Tasks_val #> 0,
     query_list_head(Tasks_val, Comm_offset, Tasks_offset),
+    %print_time('after query list_head', Current),
+    
 
     labeling([enum], [Tasks2_addr, Tasks2_val]),
 
@@ -151,13 +163,17 @@ query_task_struct(Base_addr) :-
     Real_parent_val #> 0,
     Group_leader_val #> 0,
     query_ts(Real_parent_val, Comm_offset, Tasks_offset),
+    %print_time('after query ts1', Current),
     %query_list_head(Child_val-16, Comm_offset, Tasks_offset),
     query_ts(Group_leader_val, Comm_offset, Tasks_offset),
+    %print_time('after query ts2', Current),
 
     labeling([enum], [Real_cred_addr, Real_cred_val, Cred_addr, Cred_val]),
     Cred_val #> 0,
     query_cred(Real_cred_val),
+    %print_time('after query cred1', Current),
     query_cred(Cred_val),
+    %print_time('after query cred2', Current),
 
 
     get_time(Now),
@@ -174,8 +190,8 @@ query_task_struct(Base_addr) :-
     log("./profile/task_struct", "group_leader", Group_leader_addr, Base_addr),
     log("./profile/task_struct", "cred", Cred_addr, Base_addr),
     log("./profile/task_struct", "pid", Pid_addr, Base_addr),
-    log("./profile/task_struct", "task_struct time", End, Start),
-
+    log("./profile/task_struct", "task_struct time", End, Start).
+/*
     print_nl('tasks offset', Tasks_offset),
     print_nl('tasks offset', Tasks_val),
     print_nl('mm offset', MM_offset),
@@ -183,7 +199,7 @@ query_task_struct(Base_addr) :-
     print_nl('real_parent', Real_parent_offset),
     print_nl('group_leader', Group_leader_offset),
     print_nl("Finished, total time", Time_past).
-
+*/
 query_module(Base_addr) :-
     /* struct list_head list;
        char name[LEN]; 
@@ -776,6 +792,15 @@ query_inode_operations(Base_addr) :-
 query_mm_struct(MM2_val) :-
     process_create(path('python'),
                     ['subquery.py', MM2_val, "mm_struct"],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+query_mm_struct_arm(MM2_val) :-
+    process_create(path('python'),
+                    ['subquery.py', MM2_val, "mm_struct_arm"],
                     [stdout(pipe(In))]),
     read_string(In, Len, X),
     string_codes(X, Result),

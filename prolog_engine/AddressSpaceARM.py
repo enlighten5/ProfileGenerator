@@ -36,14 +36,14 @@ class AddressSpaceARM(linux.ArmAddressSpace):
         else:
             print "[Error] - cannot identify Linux version"
             self.version = 0
-        self.extract_info(self.vtop(0xffffffc0010f5cf0), "./tmp")
-
+        #self.extract_info(self.vtop(0xffffffc0010f5cf0), "./tmp")
+        '''
         self.image_name = os.path.basename(mem_path)
         if not os.path.exists(self.image_name + '_symbol_table'):
             self.find_kallsyms_address_pre_46_arm()
 
         self.shift = self.find_KASLR_shift("kallsyms_on_each_symbol")
-        
+        '''
         '''
         store_dtb = "./" + self.image_name + "_dtb"
         try: 
@@ -133,11 +133,36 @@ class AddressSpaceARM(linux.ArmAddressSpace):
     def vtop(self, vaddr):
         if vaddr == 0xffffffffffffffff:
             return None
-        if vaddr & 0xffffffc000000000 == 0xffffffc000000000:
-            paddr = vaddr - 0xffffffbffda04800
-            return paddr
+        if vaddr > 0xffffffc000000000 and vaddr & 0xffffffc000000000 == 0xffffffc000000000:
+            paddr = vaddr - 0xffffffc000000000
+            if paddr > self.mem.size():
+                return None
+            else:
+                return paddr
+        if vaddr > 0xffffff8008000000 and vaddr & 0xffffff8008000000 == 0xffffff8008000000:
+            paddr = vaddr - 0xffffff8008000000
+            if paddr > self.mem.size():
+                return None
+            else:
+                return paddr
+        '''
+        #if vaddr & 0xffff800000000000 == 0xffff800000000000:
+        #if vaddr & 0xffffffc000000000 == 0xffffffc000000000:
+        if vaddr & 0xffffff8008000000 == 0xffffff8008000000:
+            paddr = vaddr - 0xffffff8008000000
+            if paddr > self.mem.size():
+                return None
+            else:
+                return paddr
+        elif vaddr & 0xffffffc000000000 == 0xffffffc000000000:
+            paddr = vaddr - 0xffffffc000000000
+            if paddr > self.mem.size():
+                return None
+            else:
+                return paddr
         else:
             return None
+        '''
     def extract_info(self, paddr, output, size = 4096):
         valid_pointer = {}
         valid_long = {}
@@ -295,13 +320,15 @@ class AddressSpaceARM(linux.ArmAddressSpace):
                 continue
             for idx in range(0, 4096, 8):
                 #print hex(step+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
-                if target in page[idx-8:idx+len(target)+8]:
-                    print "found ", target, hex(step+idx), page[idx-16:idx+32]
+                if target in page[idx:idx+len(target)+8]:
+                    for tmp_idx in range(idx, idx+len(target)+8, 1):
+                        if target == page[tmp_idx:tmp_idx+len(target)]:
+                            print "found ", target, hex(step+idx), page[idx-16:idx+32]
                     #for tmpidx in range(0, 4096, 8):
                     #    print hex(step+tmpidx), hex(self.is_user_pointer(page[tmpidx:tmpidx+8], 0))
                     #return step
             
-        print "[-] Error: target not found", self.read_memory(0x15c04c0+1192, 8)
+        print "[-] Error: target not found"
         '''
         page = self.read_memory(0x15c0000, 0x200 * 8)
         
@@ -309,6 +336,79 @@ class AddressSpaceARM(linux.ArmAddressSpace):
             print hex(0x15c0000+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
         '''
         exit(0)
+    # This function is to find the init address of task structure. 
+    # It starts from kthread and use the property of parent structure, which is swapper structure. 
+    def find_tasks(self, addr):
+        '''
+        This function is to find the address of the global symbol `init_task`.
+        At this point, we do not know the start address of a task structure, the only thing we know is the location of process name field (comm).
+        Another helpful information we can use is that there is a parent field above comm that points to the init address of another task structure. 
+        We first gues the location of initial address of a task struct A, and we know the comm location B, then we can have the gap B-A. 
+        If there is a pointer between A and B, which points to a location where there is a string value at the same gap B-A, then we know A is a correct initial
+        address of a task structure. 
+        It starts from `kthreadd` process, which is in the first argument. 
+        '''
+        page = self.read_memory(addr, 0x200 * 8)
+        value = struct.unpack("<512Q", page)
+        
+        for item in range(len(value)):
+            number = value[item]
+            phys_addr = self.vtop(number)
+            if phys_addr:
+                #print "find pointer", hex(number), ""
+                for gap in range(addr, addr+3000, 8):
+                    target_comm = phys_addr + addr+3000 - gap
+                    comm = self.read_memory(target_comm, 8)
+                    if not comm:
+                        continue
+                    if "swapper" in comm:
+                        print "found next task at", comm , hex(addr + item * 8), hex(phys_addr), addr+3000 - gap
+                    '''
+                    if all( ord(c) >= 45 and ord(c) <= 122 or ord(c)==0 for c in comm ):
+                        if len(comm.replace('\x00', '')) > 4:
+                            #if self.verbose:
+                            print "found task struct at", comm , phys_addr, addr + 3000 - gap
+                    '''
+                gap = addr+3000 - (addr + item * 8)
+                target_comm = phys_addr + gap
+                comm = self.read_memory(target_comm, 8)
+                if not comm:
+                    continue
+                if "swapper" in comm:
+                    print "found next task at", comm , hex(addr + item * 8)
+                
+                if all( ord(c) >= 45 and ord(c) <= 122 or ord(c)==0 for c in comm ):
+                    if len(comm.replace('\x00', '')) > 4:
+                        #if self.verbose:
+                        print "found next task at", comm , hex(addr + item * 8), gap
+    def find_tasks2(self, addr):
+        page = self.read_memory(addr, 4096)
+        value = struct.unpack("<512Q", page)
+        for index in range(len(value)):
+            number = value[index]
+            paddr = self.vtop(number)
+            if not paddr:
+                continue
+            for init_addr in range(addr, addr+3000, 8):
+                target_pname = paddr + addr+3000 - init_addr
+                pname = self.read_memory(target_pname, 8)
+                if "swapper" in pname:
+                    print "found swapper"
+                if all(ord(c) >= 45 and ord(c) <= 122 or ord(c)==0 for c in pname) and len(pname.replace('\x00', '')) > 4:
+                    print "found task struct at", pname , hex(init_addr), addr + 3000 - init_addr
+                    for tasks_addr in range(init_addr, addr+3000, 8):
+                        p_addr = self.vtop(value[(tasks_addr-addr)/8])
+                        if not p_addr:
+                            continue
+                        tasks_name_addr = p_addr - (tasks_addr-init_addr) + addr + 3000 - init_addr
+                        tasks_name = self.read_memory(tasks_name_addr, 8)
+                        if all(ord(c) >= 45 and ord(c) <= 122 or ord(c)==0 for c in tasks_name) and len(tasks_name.replace('\x00', '')) > 4:
+                            print "found tasks list", tasks_name, hex(tasks_addr), tasks_addr - init_addr
+                            #break
+                    print "name offset", addr+3000-init_addr
+                    print '----------------------'
+
+                   
 
     def find_kallsyms_address_pre_46_arm(self):
         '''

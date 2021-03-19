@@ -168,11 +168,58 @@ possible_mm_struct(Current_addr) :-
     log("./profile/mm_struct", "arg_start", ARG_start_addr, Current_addr),
     log("./profile/mm_struct", "mm_struct time", End, Start).
 
+possible_mm_struct_arm(Current_addr) :-
+    pointer(Ptr),
+    long(Ulg),
+
+    Ptr_profile = [
+        [Mmap_addr, Mmap_val],
+        [Pgd_addr, Pgd_val]  
+    ],
+    Ulong_profile = [
+        [Mmap_base_addr, Mmap_base_val],
+        [Task_size_addr, Task_size_val],
+        [Start_brk_addr, Start_brk_val],
+        [Brk_addr, Brk_val],
+        [Start_stack_addr, Start_stack_val],
+        [ARG_start_addr, ARG_start_val]
+    ],
+    Mmap_addr #= Current_addr,
+    Mmap_base_val #> 0x7f00000000,
+    chain([Mmap_addr, Mmap_base_addr, Task_size_addr, Pgd_addr], #<),
+    Pgd_addr #> Task_size_addr,
+    Pgd_addr #=< Task_size_addr + 40,
+    %Not sure about this rule
+    Task_size_val #>= 0x7f00000000,
+    Start_brk_addr #> Pgd_addr,
+    Start_stack_val #> 0x7f00000000,
+    ARG_start_addr #< Current_addr + 500,
+    chain([Start_brk_addr, Brk_addr, Start_stack_addr, ARG_start_addr], #<),
+    ARG_start_addr #= Start_brk_addr + 24,
+    Brk_val #< 0x7f00000000,
+    ARG_start_val #> 0x7f00000000,
+    tuples_in(Ptr_profile, Ptr),
+    tuples_in(Ulong_profile, Ulg),
+    Mmap_val #> 0,
+    Pgd_val #> 0,
+    labeling([enum], [Mmap_addr, Mmap_val, Mmap_base_addr, Pgd_addr, Pgd_val]),
+    label([Start_brk_addr, Brk_addr, Start_stack_addr, ARG_start_addr]),
+    log("./profile/mm_struct", "mmap", Mmap_addr, Current_addr),
+    log("./profile/mm_struct", "mmap_base", Mmap_base_addr, Current_addr),
+    log("./profile/mm_struct", "task_size", Task_size_addr, Current_addr),
+    log("./profile/mm_struct", "pgd", Pgd_addr, Current_addr),
+    log("./profile/mm_struct", "start_brk", Start_brk_addr, Current_addr),
+    log("./profile/mm_struct", "brk", Brk_addr, Current_addr),
+    log("./profile/mm_struct", "start_stack", Start_stack_addr, Current_addr),
+    log("./profile/mm_struct", "arg_start", ARG_start_addr, Current_addr),
+    log("./profile/mm_struct", "mm_struct time", End, Start).
+
 
 possible_vm_area_struct(Base_addr, MM_addr) :-
     statistics(real_time, [Start|_]),
     pointer(Ptr),
     long(Ulg),
+    int(Int),
     Ptr_profile = [
         [VM_next_addr, VM_next_val],
         [Vm_mm_addr, Vm_mm_val],
@@ -185,8 +232,11 @@ possible_vm_area_struct(Base_addr, MM_addr) :-
         /*VM_pgoff is 0, and we do not consider 0 as ulong*/
         %[VM_pgoff_addr, VM_pgoff_val]
     ],
+    Int_profile = [
+        [Vm_page_prot_addr, Vm_page_prot_val]
+    ],
     VM_start_addr #>= Base_addr,
-    chain([VM_start_addr, VM_end_addr, VM_next_addr, Vm_mm_addr, VM_flag_addr, VM_file_addr], #<),
+    chain([VM_start_addr, VM_end_addr, VM_next_addr, Vm_mm_addr, Vm_page_prot_addr, VM_flag_addr, VM_file_addr], #<),
     VM_end_addr #= VM_start_addr + 8,
     VM_next_addr #= VM_end_addr + 8,
     VM_next_addr #< Base_addr + 32,
@@ -194,11 +244,15 @@ possible_vm_area_struct(Base_addr, MM_addr) :-
     Vm_mm_val #= MM_addr,
     VM_file_addr #< Base_addr + 180,
     VM_pgoff_addr #= VM_file_addr - 8,
+    VM_flag_addr #= Vm_page_prot_addr + 4,
+    %Vm_page_prot_val #> 0,
     VM_flag_val #< 0x88888888,
+    VM_flag_val #> 0x8000000,
     VM_file_addr #< Base_addr + 200,
 
     tuples_in(Ptr_profile, Ptr),
     tuples_in(Ulong_profile, Ulg),
+    tuples_in(Int_profile, Int),
     %FIXME: VM_flag may need value constraints.
 
     label([VM_next_addr, VM_next_val]),
@@ -214,12 +268,14 @@ possible_vm_area_struct(Base_addr, MM_addr) :-
     close(In),
     isTrue(Result),
     statistics(real_time, [End|_]),
+    label([VM_flag_val]),
 
     log("./profile/vm_area_struct", "vm_start", VM_start_addr, Base_addr),
     log("./profile/vm_area_struct", "vm_end", VM_end_addr, Base_addr),
     log("./profile/vm_area_struct", "vm_next", VM_next_addr, Base_addr),
     log("./profile/vm_area_struct", "vm_mm", Vm_mm_addr, Base_addr),
     log("./profile/vm_area_struct", "vm_flag", VM_flag_addr, Base_addr),
+    log("./profile/vm_area_struct", "vm_flag value", VM_flag_val, 0),
     log("./profile/vm_area_struct", "vm_pgoff", VM_pgoff_addr, Base_addr),
     log("./profile/vm_area_struct", "vm_file", VM_file_addr, Base_addr),
     log("./profile/vm_area_struct", "vm_area_struct time", End, Start).
@@ -403,6 +459,7 @@ possible_dentry(Base_addr) :-
     log("./profile/dentry", "parent", Dparent_addr, Base_addr),
     log("./profile/dentry", "d_name", _Name_addr, Base_addr),
     log("./profile/dentry", "d_inode", D_inode_addr, Base_addr),
+    log("./profile/dentry", "D_inode_addr", D_inode_val, 0),
     log("./profile/dentry", "d_iname", D_iname_addr, Base_addr),
     log("./profile/dentry", "dchild", Dchild_addr, Base_addr),
     log("./profile/dentry", "d_subdirs", D_subdirs_addr, Base_addr),
@@ -433,7 +490,9 @@ possible_inode(Base_addr) :-
         [I_op_addr, I_op_val],
         [I_sb_addr, I_sb_val],
         [I_mapping_addr, I_mapping_val],
-        [I_fop_addr, I_fop_val]
+        [I_fop_addr, I_fop_val],
+        [I_flctx_addr, I_flctx_val]
+
     ]),
     Ulong_profile = ([
         /* i_mode is actually not long type. */
@@ -459,13 +518,16 @@ possible_inode(Base_addr) :-
 
     chain([I_mode_addr, I_uid_addr, I_gid_addr, I_op_addr, I_sb_addr, I_mapping_addr, I_ino_addr,
            I_size_addr, I_atime_addr, _I_atime_addr, I_mtime_addr, I_ctime_addr, _I_ctime_addr, 
-           _atomic_t_addr, _atomic_t2_addr, I_fop_addr], #<),
+           _atomic_t_addr, _atomic_t2_addr, I_fop_addr, I_flctx_addr], #<),
 
     I_mode_addr #= Base_addr,
     I_mode_val #> 0,
     I_gid_addr #= I_mode_addr + 8,
     I_op_addr #=< Base_addr + 32,
     I_op_val #> 0,
+    I_fop_val #\= I_fop_addr,
+    I_flctx_addr #= I_fop_addr + 8,
+    I_flctx_val #\= I_flctx_addr,
     labeling([enum], [I_op_addr, I_op_val]),
     query_inode_operations(I_op_val),
 
@@ -541,6 +603,83 @@ possible_inode_operations(Base_addr) :-
            _L8_addr, _L9_addr, _L10_addr, _L11_addr, _L12_addr], #<),
     _L1_addr #= Base_addr,
     _L12_addr #= Base_addr + 88.
+
+query_module(Base_addr) :-
+    process_create(path('python'),
+                    ['subquery.py', Base_addr, "module", Offset],
+                    [stdout(pipe(In))]),
+    read_string(In, Len, X),
+    string_codes(X, Result),
+    close(In),
+    isTrue(Result).
+
+possible_module(Base_addr) :-
+    /* struct list_head list;
+       char name[LEN]; 
+       struct kernel_param *kp;
+       struct module_layout core_layout;
+       struct module_layout init_layout; 
+       unsigned int core_size, init_size;
+       unsigned int init_text_size, core_text_size;
+    */
+    %get_time(Current),
+    statistics(real_time, [Start|_]),
+    pointer(Ptr),
+    string_val(Str),
+    int(Int),
+    /* Type Invariants */
+    Ptr_profile = ([
+        [List_addr, List_val],
+        [KP_addr, KP_val],
+        [Core_base_addr, Core_base_val]
+    ]),
+    Str_profile = ([
+        [Name_addr, Name_val]    
+    ]),
+    Int_profile = ([
+        [Core_size_addr, Core_size_val],
+        [Core_text_size_addr, Core_text_size_val],
+        [RO_size_addr, RO_size_val],
+        [RO_init_size_addr, RO_init_size_val]
+    ]),    
+    
+    tuples_in(Ptr_profile, Ptr),
+    tuples_in(Str_profile, Str),
+    tuples_in(Int_profile, Int),
+    /* Order Invariants */
+    chain([List_addr, Name_addr, KP_addr, Core_base_addr, Core_size_addr, 
+            Core_text_size_addr, RO_size_addr, RO_init_size_addr], #<),
+    RO_init_size_addr - Base_addr #< 1000,
+    
+    labeling([enum], [Name_addr, Name_val]),
+    List_addr #= Name_addr - 16,
+    labeling([enum], [List_addr, List_val]),
+    Name_offset #= Name_addr - Base_addr,
+    List_offset #= List_addr - Base_addr,
+    query_list_head(List_val, Name_offset, List_offset),
+    KP_val #> 0,
+    labeling([enum], [KP_addr, KP_val]),
+    query_kernel_param(KP_val),
+    Core_size_addr #= Core_base_addr + 8,
+    Core_size_val #> 0,
+    Core_text_size_addr #= Core_size_addr + 4,
+    Core_text_size_val #> 0,
+    RO_size_addr #= Core_text_size_addr + 4,
+    RO_init_size_addr #= RO_size_addr + 4,
+
+    labeling([enum], [Core_base_addr, Core_size_addr, 
+            Core_text_size_addr, RO_size_addr, RO_init_size_addr]),
+
+    %get_time(End),
+    statistics(real_time, [End|_]),
+    %Time_past is End - Current,
+    log("./profile/module", "list", List_addr, Base_addr),
+    log("./profile/module", "name", Name_addr, Base_addr),
+    log("./profile/module", "kp", KP_addr, Base_addr),
+    log("./profile/module", "core_base", Core_base_addr, Base_addr),
+    log("./profile/module", "core_size", Core_size_addr, Base_addr),
+    log("./profile/module", "core_text_size", Core_text_size_addr, Base_addr),
+    log("./profile/module", "module time", End, Start).
 
 possible_d_entry(Base_addr, Dname_offset) :-
     current_predicate(string_val/1),

@@ -1,5 +1,5 @@
 import mmap, struct, os, sys
-from time import gmtime, strftime
+from time import gmtime, strftime, time
 import LinuxMemory as linux
 import AddressSpaceARM as arm
 # debian_x64
@@ -106,57 +106,115 @@ class AddressSpace(linux.AMD64PagedMemory):
         #offset4: centos6
         self.offset = offset2
         self.mem_path = mem_path
-        self.mem.seek(0)
-       
-        if "ELF" in self.mem.read(6):
-            print "ELF headers"
-            self.has_elf_header = True
-            self.offset = self.parse_elf_header()
-
-
-        else:
-            print "No ELF headers"
-            self.has_elf_header = False
-        # Identify Linux version
-        version_idx = self.mem.find("Linux version 4") + len("Linux version ")
-        if version_idx:
-            self.mem.seek(version_idx)
-            version = self.mem.read(8)
-            index = version.index('.')
-            index2 = version[index+1:].index('.')
-            self.version = version[:index+index2+1]
-            print "Linux version", self.version
-        else:
-            print "[Error] - cannot identify Linux version"
-            self.version = 0
-        vdtb_idx = self.mem.find("SYMBOL(swapper_pg_dir)=") + len("SYMBOL(swapper_pg_dir)=")
-        if vdtb_idx-len("SYMBOL(swapper_pg_dir)=")>0:
-            self.mem.seek(vdtb_idx)
-            self.dtb_vaddr = "0x" + self.mem.read(16)
-            print "dtb_vaddr", self.dtb_vaddr
-        else:
-            print "cannot find dtb_vaddr"
-            self.dtb_vaddr = "0xffffffffaee0a000"
+        
         #self.find_kallsyms_address_pre_46_arm()
         self.image_name = os.path.basename(mem_path)
-        if not os.path.exists(self.image_name + '_symbol_table'):
-            self.find_kallsyms_address()
+
+        self.mem.seek(0)
+        self.magic_num = self.mem.read(8)
+        print "header", [c for c in self.mem.read(8)]
+        
 
         if not os.path.exists(self.image_name + '_metadata'):
+            #Parse elf header
+            self.mem.seek(0)
+            if "ELF" in self.mem.read(6):
+                print "ELF headers", self.mem.read(6)
+                self.has_elf_header = True
+                self.offset = self.parse_elf_header()
+            else:
+                print "No ELF headers"
+                self.has_elf_header = False
+            
+            # Identify Linux version
+            version_idx = self.mem.find("Linux version 5")
+            if version_idx < 0:
+                version_idx = self.mem.find("Linux version 4")
+            if version_idx < 0:
+                version_idx = self.mem.find("Linux version 3")
+            if version_idx < 0:
+                print "[Error] - cannot identify Linux version"
+                version = 0
+            else:
+                self.mem.seek(version_idx + len("Linux version "))
+                version = self.mem.read(8)
+                index = version.index('.')
+                index2 = version[index+1:].index('.')
+                self.version = version[:index+index2+1]
+                print "Linux version", self.version
+
+            if not os.path.exists(self.image_name + '_symbol_table'):
+                ksym_time = time()
+                if float(self.version) < 4.6:
+                    self.find_kallsyms_address_pre_46()
+                else:
+                    self.find_kallsyms_address()
+                print "[----------------] time to find ksym:", time() - ksym_time
+
+            vdtb_idx = self.mem.find("SYMBOL(swapper_pg_dir)=") + len("SYMBOL(swapper_pg_dir)=")
+            if vdtb_idx-len("SYMBOL(swapper_pg_dir)=")>0:
+                self.mem.seek(vdtb_idx)
+                self.dtb_vaddr = "0x" + self.mem.read(16)
+                print "dtb_vaddr", self.dtb_vaddr
+            else:
+                print "cannot find dtb_vaddr"
+                self.dtb_vaddr = None
+            shift_time = time()
             self.v_to_p_shift = self.find_KASLR_shift("kallsyms_on_each_symbol")
+            print "[----------------] time to find v_to_p shift:", time() - shift_time, hex(self.v_to_p_shift)
             self.v_shift, self.dtb = self.find_v_to_p_shift()
             with open(self.image_name + '_metadata', 'w') as metadata:
-                metadata.write(str(self.v_to_p_shift) + ' ')
-                metadata.write(str(self.v_shift) + ' ')
-                metadata.write(str(self.dtb))
+                if self.has_elf_header:
+                    metadata.write('elf_header ')
+                    for item in self.offset:
+                        for c in item:
+                            metadata.write(str(c) + ' ')
+                    metadata.write('\n')
+                if self.version:
+                    metadata.write("version " + str(self.version) + '\n')
+                metadata.write("v_to_p_shift " + str(self.v_to_p_shift) + '\n')
+                metadata.write("v_shift " + str(self.v_shift) + '\n')
+                metadata.write("dtb " + str(self.dtb))
         else:
+            if not os.path.exists(self.image_name + '_symbol_table'):
+                self.find_kallsyms_address()
+            try:
+                f_metadata = os.open(self.image_name + '_metadata', os.O_RDONLY)
+            except:
+                print "Error: open image failed.\n"
+                sys.exit(1)
+            try:
+                self.mem_metadata = mmap.mmap(f_metadata, 0, mmap.MAP_SHARED, mmap.ACCESS_READ)
+            except:
+                print "Error mmap\n"
+                sys.exit(1)
+            self.offset = []
+            self.has_elf_header = False
+            text = self.mem_metadata.read(self.mem_metadata.size())
+            for item in text.split('\n'):
+                content = item.split(' ')
+                if content[0] == "version":
+                    self.version = content[1]
+                if content[0] == "v_to_p_shift":
+                    self.v_to_p_shift = int(content[1])
+                if content[0] == "v_shift":
+                    self.v_shift = int(content[1])
+                if content[0] == "dtb":
+                    self.dtb = int(content[1])
+                if content[0] == "elf_header":
+                    self.has_elf_header = True
+                    tmp = [int(c) for c in content[1:-1]]
+                    for i in range(len(tmp)/3):
+                        self.offset.append(tuple(tmp[i*3:i*3+3]))
+            '''
             with open(self.image_name + '_metadata', 'r') as metadata:
                 line = metadata.readline().split(' ')
                 self.v_to_p_shift = int(line[0])
                 self.v_shift = int(line[1])
                 self.dtb = int(line[2])
+            '''
         #print "v_to_p_shift", hex(self.v_to_p_shift), "v_shift", hex(self.v_shift), "dtb", hex(self.dtb)
-
+        #self.find_kernel_elf_header()
         store_dtb = "./" + self.image_name + "_dtb"
         g_dtb = 0
         '''
@@ -212,7 +270,8 @@ class AddressSpace(linux.AMD64PagedMemory):
                 fd.write(str(self.dtb))
         #self.find_dtb(0)
         '''
-
+    def find_kernel_elf_header(self):
+        self.find_string(self.magic_num) 
     def parse_elf_header(self):
         '''
             Parse elf header 64 
@@ -2040,8 +2099,11 @@ def main():
     '''
     addr_space = AddressSpace(mem_path, 1)
     #addr_space = arm.AddressSpaceARM(mem_path, 1)
-    paddr = addr_space.vtop(0xffffffffac0fa370)
-    paddr = 0x386ca6c8-0x8
+    paddr = addr_space.vtop(0xffffffff93249dc8+addr_space.v_shift)
+    paddr = addr_space.vtop(0xffffffff9da104c0 + addr_space.v_shift)
+    paddr = 0x3ea4a9c0
+    print "translate addr", paddr
+    #paddr = 0x386ca6c8-0x8
     '''
     tmp = addr_space.read_memory(paddr, 8)
     if not tmp:

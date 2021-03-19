@@ -1,5 +1,6 @@
 :- use_module(reif).
 :- use_module(library(clpfd)).
+:- table(test/2).
 hailstone(N, N).
 hailstone(N0, N) :-
         R is N0 mod 2,
