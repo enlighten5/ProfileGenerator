@@ -2089,7 +2089,7 @@ def test():
 
 def main():
     if len(sys.argv) < 2:
-        print "Error: please specify memory path and dtb_vaddr.\n"
+        #print "Error: please specify memory path and dtb_vaddr.\n"
         sys.exit(1)
     mem_path = sys.argv[1]
     #addr_space = AddressSpace(mem_path, 0x3809000)
@@ -2097,12 +2097,12 @@ def main():
     '''
         Set dtb to 1 to avoid searching for dtb
     '''
-    addr_space = AddressSpace(mem_path, 1)
+    addr_space = AddressSpace(mem_path)
     #addr_space = arm.AddressSpaceARM(mem_path, 1)
-    paddr = addr_space.vtop(0xffffffff93249dc8+addr_space.v_shift)
-    paddr = addr_space.vtop(0xffffffff9da104c0 + addr_space.v_shift)
-    paddr = 0x3ea4a9c0
-    print "translate addr", paddr
+    #paddr = addr_space.vtop(0xffffffff93249dc8+addr_space.v_shift)
+    #paddr = addr_space.vtop(0xffffffff9da104c0 + addr_space.v_shift)
+    #paddr = 0x3ea4a9c0
+    #print "translate addr", paddr
     #paddr = 0x386ca6c8-0x8
     '''
     tmp = addr_space.read_memory(paddr, 8)
@@ -2113,12 +2113,12 @@ def main():
     paddr = addr_space.vtop(0xffffffff81c336f0)
     paddr = addr_space.vtop(0xffffffff81ed67c0)
     '''
-    size = 0x166c9/4096*8
-    while size:
+    #size = 0x166c9/4096*8
+    #while size:
         #addr_space.extract_info(paddr, "./tmp")
         #paddr += 4096
-        size -= 1
-    addr_space.extract_info(paddr, "./tmp")
+    #    size -= 1
+    #addr_space.extract_info(paddr, "./tmp")
     #addr_space.extract_kallsyms_symbols([],0,0,93398,0,0)
     #addr_space.find_kallsyms_address()
     #addr_space.find_kallsyms_address_pre_46()
