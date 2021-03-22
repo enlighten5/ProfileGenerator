@@ -113,7 +113,7 @@ class AddressSpace(linux.AMD64PagedMemory):
         self.mem.seek(0)
         self.magic_num = self.mem.read(8)
         print "header", [c for c in self.mem.read(8)]
-        
+        self.dtb = 0
 
         if not os.path.exists(self.image_name + '_metadata'):
             #Parse elf header
@@ -162,7 +162,10 @@ class AddressSpace(linux.AMD64PagedMemory):
             shift_time = time()
             self.v_to_p_shift = self.find_KASLR_shift("kallsyms_on_each_symbol")
             print "[----------------] time to find v_to_p shift:", time() - shift_time, hex(self.v_to_p_shift)
-            self.v_shift, self.dtb = self.find_v_to_p_shift()
+            if self.dtb == 0:
+                self.v_shift, self.dtb = self.find_v_to_p_shift()
+            else:
+                self.v_shift = 0
             with open(self.image_name + '_metadata', 'w') as metadata:
                 if self.has_elf_header:
                     metadata.write('elf_header ')
@@ -687,6 +690,7 @@ class AddressSpace(linux.AMD64PagedMemory):
     def find_KASLR_shift(self, target):
         location = 0
         symbol_file = self.image_name + "_symbol_table"
+        target_vaddr = 0
         with open(symbol_file, 'r') as symbol:
             line = symbol.readline()
             while line:
@@ -694,6 +698,11 @@ class AddressSpace(linux.AMD64PagedMemory):
                 if "__kstrtab_" + target in line[index:].strip():
                     target_vaddr = int(line[:line.find('\t')][:-1], 16)
                 line = symbol.readline()
+        if target_vaddr == 0:
+            #cannot find _kstrtab symbols in recovered symbol list. 
+            #we can compute the shift using vaddr and paddr of dtb.
+            self.dtb = self.find_dtb()
+            return int(self.dtb_vaddr, 16) - self.dtb
         self.log("start search KASLR shift")
         for step in range(0, self.mem.size(), 4096):
             page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
