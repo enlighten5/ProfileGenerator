@@ -1,5 +1,5 @@
 :- use_module(library(clpfd)).
-:- table query_task_struct/1.
+
 
 isTrue([X, _]):-
     X == 49.
@@ -133,6 +133,8 @@ query_task_struct(Base_addr) :-
     /*MM2_addr #= Base_addr + 1992,
     Comm_addr #= Base_addr + 1656,
     Tasks_addr #= Base_addr + 1904,*/
+    %Comm_addr #= Base_addr + 1696,
+    %Tasks_addr #= Base_addr + 960,
     chain([Tasks_addr, Tasks2_addr, MM_addr, MM2_addr, Pid_addr, Tgid_addr, Real_parent_addr, Parent_addr , Child_addr, 
            Group_leader_addr, Thread_group_addr, Real_cred_addr, Cred_addr, Comm_addr], #<),
 
@@ -165,14 +167,14 @@ query_task_struct(Base_addr) :-
     query_ts(Real_parent_val, Comm_offset, Tasks_offset),
     %print_time('after query ts1', Current),
     %query_list_head(Child_val-16, Comm_offset, Tasks_offset),
-    query_ts(Group_leader_val, Comm_offset, Tasks_offset),
+    %query_ts(Group_leader_val, Comm_offset, Tasks_offset),
     %print_time('after query ts2', Current),
 
     labeling([enum], [Real_cred_addr, Real_cred_val, Cred_addr, Cred_val]),
     Cred_val #> 0,
-    query_cred(Real_cred_val),
+    %query_cred(Real_cred_val),
     %print_time('after query cred1', Current),
-    query_cred(Cred_val),
+    %query_cred(Cred_val),
     %print_time('after query cred2', Current),
 
 
@@ -190,8 +192,8 @@ query_task_struct(Base_addr) :-
     log("./profile/task_struct", "group_leader", Group_leader_addr, Base_addr),
     log("./profile/task_struct", "cred", Cred_addr, Base_addr),
     log("./profile/task_struct", "pid", Pid_addr, Base_addr),
-    log("./profile/task_struct", "task_struct time", End, Start).
-/*
+    log("./profile/task_struct", "task_struct time", End, Start),
+
     print_nl('tasks offset', Tasks_offset),
     print_nl('tasks offset', Tasks_val),
     print_nl('mm offset', MM_offset),
@@ -199,7 +201,7 @@ query_task_struct(Base_addr) :-
     print_nl('real_parent', Real_parent_offset),
     print_nl('group_leader', Group_leader_offset),
     print_nl("Finished, total time", Time_past).
-*/
+
 query_module(Base_addr) :-
     /* struct list_head list;
        char name[LEN]; 
@@ -214,6 +216,7 @@ query_module(Base_addr) :-
     pointer(Ptr),
     string_val(Str),
     int(Int),
+    long(Ulg),
     /* Type Invariants */
     Ptr_profile = ([
         [List_addr, List_val],
@@ -227,14 +230,20 @@ query_module(Base_addr) :-
         [Core_size_addr, Core_size_val],
         [Core_text_size_addr, Core_text_size_val],
         [RO_size_addr, RO_size_val],
+        [Num_kp_addr, Num_kp_val],
         [RO_init_size_addr, RO_init_size_val]
-    ]),    
+    ]),
+    %Ulong_profile = ([
+        /* FIXME This could be a int or long */
+    %    [Num_kp_addr, Num_kp_val]
+    %]),
     
     tuples_in(Ptr_profile, Ptr),
     tuples_in(Str_profile, Str),
     tuples_in(Int_profile, Int),
+    %tuples_in(Ulong_profile, Ulg),
     /* Order Invariants */
-    chain([List_addr, Name_addr, KP_addr, Core_base_addr, Core_size_addr, 
+    chain([List_addr, Name_addr, KP_addr, Num_kp_addr, Core_base_addr, Core_size_addr, 
             Core_text_size_addr, RO_size_addr, RO_init_size_addr], #<),
     RO_init_size_addr - Base_addr #< 1000,
     
@@ -244,7 +253,9 @@ query_module(Base_addr) :-
     Name_offset #= Name_addr - Base_addr,
     List_offset #= List_addr - Base_addr,
     query_list_head(List_val, Name_offset, List_offset),
+    /* FIXME: problem, kp might be zero! */
     KP_val #> 0,
+    Num_kp_addr #= KP_addr + 12,
     labeling([enum], [KP_addr, KP_val]),
     query_kernel_param(KP_val),
     Core_size_addr #= Core_base_addr + 8,
@@ -260,6 +271,7 @@ query_module(Base_addr) :-
     %get_time(End),
     statistics(real_time, [End|_]),
     %Time_past is End - Current,
+    log("./profile/module", "base", Base_addr, 0),
     log("./profile/module", "list", List_addr, Base_addr),
     log("./profile/module", "name", Name_addr, Base_addr),
     log("./profile/module", "kp", KP_addr, Base_addr),
@@ -276,7 +288,7 @@ query_mount_hash(Base_addr) :-
         [Mount_addr, Mount_val]
     ]),
     tuples_in(Ptr_profile, Ptr),
-    Mount_addr #< Base_addr + 250,
+    Mount_addr #< Base_addr + 500,
     Mount_val #> 0,
     labeling([enum], [Mount_addr, Mount_val]),
     query_mount(Mount_val),
@@ -450,7 +462,7 @@ query_resource(Base_addr) :-
     tuples_in(Int_profile, Int),
 
     Child_val #> 0,
-    Start_addr #>= Base_addr,
+    Start_addr #= Base_addr,
     chain([Start_addr, End_addr, Name_addr, Flags_addr, Parent_addr, Sibling_addr, Child_addr], #<),
     %Name_addr #= Base_addr + 16,
     Child_addr #=< Base_addr + 64,
@@ -477,6 +489,7 @@ query_neigh_tables(Base_addr) :-
     ]),
     tuples_in(Ptr_profile, Ptr),
     Neigh_table_addr #=< Base_addr + 32,
+    Neigh_table_val #> 0,
     labeling([enum], [Neigh_table_addr, Neigh_table_val]),
     query_neigh_table(Neigh_table_val),
 

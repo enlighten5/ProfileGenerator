@@ -151,6 +151,7 @@ possible_mm_struct(Current_addr) :-
     process_create(path('python'),
                     ['subquery.py', Mmap_val, "vm_area_struct", Current_addr],
                     [stdout(pipe(In))]),
+    
     print(In),
     read_string(In, Len, X),
     string_codes(X, Result),
@@ -240,14 +241,18 @@ possible_vm_area_struct(Base_addr, MM_addr) :-
     VM_end_addr #= VM_start_addr + 8,
     VM_next_addr #= VM_end_addr + 8,
     VM_next_addr #< Base_addr + 32,
-
-    Vm_mm_val #= MM_addr,
+    /* This is not always true */
+    /*Vm_mm_val #= MM_addr,*/
     VM_file_addr #< Base_addr + 180,
     VM_pgoff_addr #= VM_file_addr - 8,
-    VM_flag_addr #= Vm_page_prot_addr + 4,
+    VM_flag_addr #=< Vm_page_prot_addr + 8,
+    /* Need to check this constraint, somehow makes no sense */
     %Vm_page_prot_val #> 0,
+    /* The value constraints for vm_flag are not checked */
+    /*VM_flag_val #< 0x88888888,
+    VM_flag_val #> 0x8000000,*/
     VM_flag_val #< 0x88888888,
-    VM_flag_val #> 0x8000000,
+    VM_flag_val #> 0,
     VM_file_addr #< Base_addr + 200,
 
     tuples_in(Ptr_profile, Ptr),
@@ -673,6 +678,7 @@ possible_module(Base_addr) :-
     %get_time(End),
     statistics(real_time, [End|_]),
     %Time_past is End - Current,
+    log("./profile/module", "base", Base_addr, 0),
     log("./profile/module", "list", List_addr, Base_addr),
     log("./profile/module", "name", Name_addr, Base_addr),
     log("./profile/module", "kp", KP_addr, Base_addr),
@@ -893,8 +899,9 @@ possible_neigh_table(Base_addr) :-
         [Nht_addr, Nht_val]
     ]),
     tuples_in(Ptr_profile, Ptr),
-    Nht_addr #>= Base_addr + 448,
-    Nht_addr #=< Base_addr + 472,
+    Nht_addr #>= Base_addr + 440,
+    Nht_addr #=< Base_addr + 512,
+    %Nht_addr #=< Base_addr + 472,
     labeling([enum], [Nht_addr, Nht_val]),
     query_neigh_hash_table(Nht_val),
     statistics(real_time, [End|_]),
@@ -950,9 +957,12 @@ possible_neighbour(Base_addr) :-
         [Dev_addr, Dev_val]
     ]),
     tuples_in(Ptr_profile, Ptr),
-    Dev_addr #>= Base_addr + 360,
+    /*Dev_addr #>= Base_addr + 360,*/
+    /* relax range constraint */
+    Dev_addr #>= Base_addr + 312,
     Dev_addr #=< Base_addr + 376,
     labeling([enum], [Dev_addr, Dev_val]),
+    log("./profile/debug", "dev", Dev_addr, Base_addr),
     process_create(path('python'),
                     ['subquery.py', Dev_val, "net_device"],
                     [stdout(pipe(In))]),
@@ -987,8 +997,9 @@ possible_net_device(Base_addr) :-
         [Dev_addr_addr, Dev_addr_val]
     ]),
     Str_profile = ([
-        [Name_addr, Name_val],
-        [Broad_cast_addr, Broad_cast_val]
+        [Name_addr, Name_val]
+        /*broadcase could be zero 
+        [Broad_cast_addr, Broad_cast_val]*/
     ]),
     Int_profile = ([
         [Promisc_addr, Promisc_val],
@@ -1000,7 +1011,7 @@ possible_net_device(Base_addr) :-
     tuples_in(Int_profile, Int),
     /* Hard to determine offsets for addr_len and promisc */
     chain([Name_addr, Dev_list_addr, Addr_len_addr, Promisc_addr, 
-           _atalk_ptr_addr, IP_ptr_addr, _dn_ptr_addr, _ip6_ptr_addr, Dev_addr_addr, Broad_cast_addr], #<),
+           _atalk_ptr_addr, IP_ptr_addr, _dn_ptr_addr, _ip6_ptr_addr, Dev_addr_addr], #<),
     Name_addr #= Base_addr,
     Name_offset #= Name_addr - Base_addr,
     IP_ptr_addr #= _atalk_ptr_addr + 8,
@@ -1015,7 +1026,8 @@ possible_net_device(Base_addr) :-
     /* do not have a good constrain to narrow down ip_ptr, use its rough offset
        to reduce the search space. 
      */ 
-    IP_ptr_addr #>= Base_addr + 760,
+    /* relax range constraint */
+    IP_ptr_addr #>= Base_addr + 696,
     IP_ptr_addr #=< Base_addr + 776,
     IP_ptr_val #> 0,
 

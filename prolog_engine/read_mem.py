@@ -142,17 +142,18 @@ class AddressSpace(linux.AMD64PagedMemory):
                 index2 = version[index+1:].index('.')
                 self.version = version[:index+index2+1]
                 print "Linux version", self.version
-
+            
             if not os.path.exists(self.image_name + '_symbol_table'):
+                version_num = self.version.split('.')
                 ksym_time = time()
-                if float(self.version) < 4.6:
+                if int(version_num[0])<=4 and int(version_num[1]<6):
                     self.find_kallsyms_address_pre_46()
                 else:
                     self.find_kallsyms_address()
                 print "[----------------] time to find ksym:", time() - ksym_time
 
-            vdtb_idx = self.mem.find("SYMBOL(swapper_pg_dir)=") + len("SYMBOL(swapper_pg_dir)=")
-            if vdtb_idx-len("SYMBOL(swapper_pg_dir)=")>0:
+            vdtb_idx = self.mem.find("SYMBOL(swapper_pg_dir)=f") + len("SYMBOL(swapper_pg_dir)=f")
+            if vdtb_idx-len("SYMBOL(swapper_pg_dir)=f")>0:
                 self.mem.seek(vdtb_idx)
                 self.dtb_vaddr = "0x" + self.mem.read(16)
                 print "dtb_vaddr", self.dtb_vaddr
@@ -161,11 +162,16 @@ class AddressSpace(linux.AMD64PagedMemory):
                 self.dtb_vaddr = None
             shift_time = time()
             self.v_to_p_shift = self.find_KASLR_shift("kallsyms_on_each_symbol")
+            #self.v_to_p_shift = self.find_KASLR_shift("boot_cpu_data")
+            if self.v_to_p_shift == 0:
+                #need to search for dtb using signature
+                self.dtb = self.find_dtb(0x1000000)
+                #the v_to_p_shift is not so useful
+                #self.v_to_p_shift = self.dtb_vaddr - self.dtb
             print "[----------------] time to find v_to_p shift:", time() - shift_time, hex(self.v_to_p_shift)
-            if self.dtb == 0:
-                self.v_shift, self.dtb = self.find_v_to_p_shift()
-            else:
-                self.v_shift = 0
+            self.v_shift, self.dtb = self.find_v_to_p_shift()
+            #self.dtb = 0x12900a000
+
             with open(self.image_name + '_metadata', 'w') as metadata:
                 if self.has_elf_header:
                     metadata.write('elf_header ')
@@ -326,18 +332,29 @@ class AddressSpace(linux.AMD64PagedMemory):
             'p_align' : [ 48, ['unsigned long long']], 
         }
         header_size = 56
-        e_phoff = self._read_memory(elf64_header['e_phoff'][0], 2)
-        e_phnum = self._read_memory(elf64_header['e_phnum'][0], 2)
+        e_phoff = self._read_memory(elf64_header['e_phoff'][0], 4)
+        e_phnum = self._read_memory(elf64_header['e_phnum'][0], 4)
+        if e_phnum > 128:
+            e_phnum = 128
+        #e_phoff = 64
+        #e_phnum = 7
         runs = []
         for i in range(e_phnum):
             idx = i * header_size
-            p_paddr = self._read_memory(e_phoff + idx + elf64_pheader['p_paddr'][0], 4)
-            p_offset = self._read_memory(e_phoff + idx + elf64_pheader['p_offset'][0], 4)
-            p_memsz = self._read_memory(e_phoff + idx + elf64_pheader['p_memsz'][0], 4)
+            p_type = self._read_memory(e_phoff + idx + elf64_pheader['p_type'][0], 2)
+            p_filesz = self._read_memory(e_phoff + idx + elf64_pheader['p_filesz'][0], 8)
+            p_memsz = self._read_memory(e_phoff + idx + elf64_pheader['p_memsz'][0], 8)
+            print "p_type", p_type, e_phnum
+            if p_type != 1 or p_filesz == 0 or p_filesz != p_memsz:
+                print "continue"
+                continue
+            p_paddr = self._read_memory(e_phoff + idx + elf64_pheader['p_paddr'][0], 8)
+            p_offset = self._read_memory(e_phoff + idx + elf64_pheader['p_offset'][0], 8)
+            p_memsz = self._read_memory(e_phoff + idx + elf64_pheader['p_memsz'][0], 8)
             runs.append((int(p_paddr), int(p_offset), int(p_memsz)))
 
-        #for item in runs:
-        #    print item
+        for item in runs:
+            print item
         return runs
 
     def parse_system_map(self, path):
@@ -387,6 +404,8 @@ class AddressSpace(linux.AMD64PagedMemory):
             value = struct.unpack('<H', value)[0]
         elif length == 4:
             value = struct.unpack('<I', value)[0]
+        elif length == 8:
+            value = struct.unpack('<Q', value)[0]
 
         return value
 
@@ -691,6 +710,7 @@ class AddressSpace(linux.AMD64PagedMemory):
         location = 0
         symbol_file = self.image_name + "_symbol_table"
         target_vaddr = 0
+        '''
         with open(symbol_file, 'r') as symbol:
             line = symbol.readline()
             while line:
@@ -698,33 +718,78 @@ class AddressSpace(linux.AMD64PagedMemory):
                 if "__kstrtab_" + target in line[index:].strip():
                     target_vaddr = int(line[:line.find('\t')][:-1], 16)
                 line = symbol.readline()
+        '''
+        with open(symbol_file, 'r') as symbol:
+            content = symbol.read().split('\n')
+            for item in content[:-1]:
+                tmp_content = item.split()
+                if "__kstrtab_" + target in tmp_content[-1]:
+                    if tmp_content[0].endswith('L'):
+                        tmp_content[0] = tmp_content[0][:-1]
+                    target_vaddr = int(tmp_content[0], 16)
+                    print "target_vaddr", hex(target_vaddr)
+                    break
         if target_vaddr == 0:
             #cannot find _kstrtab symbols in recovered symbol list. 
             #we can compute the shift using vaddr and paddr of dtb.
             self.dtb = self.find_dtb()
             return int(self.dtb_vaddr, 16) - self.dtb
         self.log("start search KASLR shift")
+        offset = target_vaddr & 0xfff
+        for step in range(offset, self.mem.size(), 4096):
+            if target == self.read_memory(step, len(target)):
+                print "found ", target, hex(step)
+                return target_vaddr - step
+        return 0
         for step in range(0, self.mem.size(), 4096):
             page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
             if not page:
+                continue
+            if target not in page:
                 continue
             for idx in range(0, 4096, 8):
                 #print hex(step+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
                 if not target in page[idx:idx+2*len(target)]:
                     continue
-                #print "found ", target, hex(step+idx), page[idx-16:idx+32]
+                print "found [-----------------]", target, hex(step+idx), page[idx-16:idx+32]
                 for tmpidx in range(idx, idx+2*len(target), 1):
                     if target == page[tmpidx:tmpidx+len(target)]:
-                        #print "found ", target, hex(step+tmpidx), page[idx-16:idx+32]
+                        #print "[-------------]found ", target, hex(step+tmpidx), page[idx-16:idx+32]
                         target_paddr = step + tmpidx
+                        if not target_vaddr & 0xfff == target_paddr & 0xfff:
+                            continue
                         break
-                if not target_vaddr & 0xffff == target_paddr & 0xffff:
+                if not target_vaddr & 0xfff == target_paddr & 0xfff:
                     continue
                 self.log("end search KASLR shift")
                 return target_vaddr - target_paddr
+        
         self.log("[-] Error: cannot find KASLR shift")
 
     def find_v_to_p_shift(self):
+        if not os.path.exists(self.image_name + "_symbol_table"):
+            print "[error]: no symbol table, exit"
+            return
+        with open(self.image_name + "_symbol_table", 'r') as symbol:
+            content = symbol.read().split('\n')
+            symbol_name = ["swapper_pg_dir", "init_level4_pgt", "init_top_pgt"]
+            for item in content:
+                tmp = item.split()
+                if any(c in tmp[-1] for c in symbol_name):
+                    print "-----", tmp[0], item
+                    if tmp[0].endswith('L'):
+                        tmp[0] = tmp[0][:-1]
+                    g_dtb = int(tmp[0], 16)
+                    if self.dtb_vaddr:
+                        print "v_shift", hex(int(self.dtb_vaddr, 16) - g_dtb)
+                        if self.dtb == 0:
+                            return int(self.dtb_vaddr, 16) - g_dtb, g_dtb - self.v_to_p_shift
+                        else:
+                            return int(self.dtb_vaddr, 16) - g_dtb, self.dtb
+                    else:
+                        print "Cannot find vaddr of dtb from the memory dump"
+                        return 0
+        '''
         try: 
             with open(self.image_name + "_symbol_table", 'r') as fd:
                 line = fd.readline()
@@ -743,6 +808,7 @@ class AddressSpace(linux.AMD64PagedMemory):
                     line = fd.readline()
         except IOError:
             print "[-] Error: cannot find symbol table"
+        '''
             
     # This function is to find the address of target process name
     def find_string(self, target):
@@ -784,7 +850,6 @@ class AddressSpace(linux.AMD64PagedMemory):
     def find_task_struct(self, paddr):
         page = self.read_memory(paddr, 0x200 * 8)
         value = struct.unpack("<512Q", page)
-        
         for item in range(len(value)):
             if "swapper" in page[item*8:(item+1)*8]:
                 print "found swapper", item*8
@@ -798,6 +863,8 @@ class AddressSpace(linux.AMD64PagedMemory):
             if target_addr == paddr+item*8:
                 continue
             comm = self.read_memory(target_addr - item*8 + comm_offset, 8)
+            if not comm:
+                continue
             if all(ord(c) >= 36 and ord(c) <= 122 or ord(c)==0 for c in comm):
                 if len(comm.replace('\x00', '')) >= 4:
                     print "found task", item*8
@@ -2112,7 +2179,9 @@ def main():
     #paddr = addr_space.vtop(0xffffffff9da104c0 + addr_space.v_shift)
     #paddr = 0x3ea4a9c0
     #print "translate addr", paddr
-    #paddr = 0x386ca6c8-0x8
+    paddr = 0x13b0a0000
+    paddr = addr_space.vtop(0xffffffffbc413840)
+    paddr = 0x3d792900
     '''
     tmp = addr_space.read_memory(paddr, 8)
     if not tmp:
@@ -2120,14 +2189,14 @@ def main():
         return
     paddr = addr_space.v(8, tmp)[0]
     paddr = addr_space.vtop(0xffffffff81c336f0)
-    paddr = addr_space.vtop(0xffffffff81ed67c0)
+    paddr = addr_space.vtop(0xffffffff81e30c90)
     '''
     #size = 0x166c9/4096*8
     #while size:
         #addr_space.extract_info(paddr, "./tmp")
         #paddr += 4096
     #    size -= 1
-    #addr_space.extract_info(paddr, "./tmp")
+    addr_space.extract_info(paddr, "./tmp")
     #addr_space.extract_kallsyms_symbols([],0,0,93398,0,0)
     #addr_space.find_kallsyms_address()
     #addr_space.find_kallsyms_address_pre_46()
