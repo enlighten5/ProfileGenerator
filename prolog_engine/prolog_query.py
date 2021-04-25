@@ -94,10 +94,7 @@ def main():
         Initialize with image path
     '''
     prolog_query = PrologQuery(sys.argv[1])
-    '''
-        Specify the object to be inferred 
-    '''
-    query = sys.argv[2]
+
     os.environ["IMAGE_PATH"] = sys.argv[1]
     print os.environ["IMAGE_PATH"]
     image_name = os.path.basename(sys.argv[1])
@@ -159,7 +156,15 @@ def main():
                 if tmp[0].endswith('L'):
                     tmp[0] = tmp[0][:-1]
                 symbol_table[tmp[-1]] = int(tmp[0], 16) + prolog_query.v_shift
-    symbol_table["init_task"] = 0x1e219700
+    #Cannot find init_task symbol from recovered symbol table, call signature searching
+    if 'init_task' not in symbol_table.keys():
+        kthread_paddr = prolog_query.find_string('kthreadd\0')
+        init_task = prolog_query.find_tasks(kthread_paddr - 3000)
+        symbol_table["init_task"] = init_task + prolog_query.v_to_p_shift
+        query_cmd = ["init_task"]
+        print "---", hex(init_task)
+        #symbol_table["init_task"] = 0x1e219700
+    
     #symbol_table["inet_sock"] = 0xffff8c7a578a1c00
     for item in symbol_table.keys():
         print item, symbol_table[item], hex(symbol_table[item])
@@ -195,7 +200,7 @@ def main():
             addr = prolog_query.read_memory(int(paddr), 8)
             paddr = prolog_query.vtop(struct.unpack("<Q", addr)[0])
         if query == "init_task":
-            paddr = 0x1e219700
+            #paddr = 0x1e219700
             paddr = prolog_query.find_task_struct(paddr)
             print "task:", hex(paddr)
 

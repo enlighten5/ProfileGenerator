@@ -165,12 +165,11 @@ class AddressSpace(linux.AMD64PagedMemory):
             #self.v_to_p_shift = self.find_KASLR_shift("boot_cpu_data")
             if self.v_to_p_shift == 0:
                 #need to search for dtb using signature
-                self.dtb = self.find_dtb(0x1000000)
+                self.dtb = self.find_dtb_new()
                 #the v_to_p_shift is not so useful
                 #self.v_to_p_shift = self.dtb_vaddr - self.dtb
             print "[----------------] time to find v_to_p shift:", time() - shift_time, hex(self.v_to_p_shift)
             self.v_shift, self.dtb = self.find_v_to_p_shift()
-            #self.dtb = 0x12900a000
 
             with open(self.image_name + '_metadata', 'w') as metadata:
                 if self.has_elf_header:
@@ -417,7 +416,8 @@ class AddressSpace(linux.AMD64PagedMemory):
                 return None
         
         if self.mem.size() - paddr < length:
-            print "Error: read out of bound memory.", hex(paddr), hex(self.mem.size())
+            #print "Error: read out of bound memory.", hex(paddr), hex(self.mem.size())
+            return None
             sys.exit(1)
 
         self.mem.seek(paddr)
@@ -541,6 +541,14 @@ class AddressSpace(linux.AMD64PagedMemory):
         if self.dtb == 0:
             print "fail to find dtb.\n"
         return 0
+    def find_dtb_new(self):
+        base = int(self.dtb_vaddr, 16) & 0xffff
+        for pgdir in range(base, self.mem.size(), 4096):
+            if self.maybe_vtop(self.dtb_vaddr, pgdir) == pgdir:
+                self.log("found dtb in find_dtb_new")
+                return pgdir
+        self.log("Cannot find dtb")
+        return None
     def find_pointer(self):
         #for step in range(0, self.mem.size(), 4096):
         for step in range(0x1479600, 0x1479600 + 4096, 4096):
@@ -732,7 +740,7 @@ class AddressSpace(linux.AMD64PagedMemory):
         if target_vaddr == 0:
             #cannot find _kstrtab symbols in recovered symbol list. 
             #we can compute the shift using vaddr and paddr of dtb.
-            self.dtb = self.find_dtb()
+            self.dtb = self.find_dtb_new()
             return int(self.dtb_vaddr, 16) - self.dtb
         self.log("start search KASLR shift")
         offset = target_vaddr & 0xfff
@@ -773,7 +781,7 @@ class AddressSpace(linux.AMD64PagedMemory):
         with open(self.image_name + "_symbol_table", 'r') as symbol:
             content = symbol.read().split('\n')
             symbol_name = ["swapper_pg_dir", "init_level4_pgt", "init_top_pgt"]
-            for item in content:
+            for item in content[:-2]:
                 tmp = item.split()
                 if any(c in tmp[-1] for c in symbol_name):
                     print "-----", tmp[0], item
@@ -790,25 +798,14 @@ class AddressSpace(linux.AMD64PagedMemory):
                         print "Cannot find vaddr of dtb from the memory dump"
                         return 0
         '''
-        try: 
-            with open(self.image_name + "_symbol_table", 'r') as fd:
-                line = fd.readline()
-                while line:
-                    symbol_name = ["swapper_pg_dir", "init_level4_pgt", "init_top_pgt"]
-                    if any(c in line for c in symbol_name):
-                        g_dtb = int(line[:line.find('\t')][:-1], 16)
-                        #self.dtb = g_dtb - self.v_to_p_shift
-                        if self.dtb_vaddr:
-                            #self.v_shift = int(dtb_vaddr, 16) - g_dtb
-                            print "v_shift", hex(int(self.dtb_vaddr, 16) - g_dtb)
-                            return int(self.dtb_vaddr, 16) - g_dtb, g_dtb - self.v_to_p_shift
-                        else:
-                            print "Cannot find vaddr of dtb from the memory dump"
-                            return 0
-                    line = fd.readline()
-        except IOError:
-            print "[-] Error: cannot find symbol table"
+            FIXME:
+            If the kernel page table symbol in not in the recovered symbols, assuming v_shit is 0
         '''
+        print "Cannot find vaddr of dtb from the memory dump"
+        if self.dtb == 0:
+            return 0, 0
+        else:
+            return 0, self.dtb
             
     # This function is to find the address of target process name
     def find_string(self, target):
@@ -816,6 +813,7 @@ class AddressSpace(linux.AMD64PagedMemory):
         This function is to find the address of the target process name in the memory.
         It is used to facilitate find_tasks method.
         '''
+        candidate = []
         for step in range(0, self.mem.size(), 4096):
             page = self.read_memory(step & 0xffffffffff000, 0x200 * 8)
             if not page:
@@ -824,18 +822,18 @@ class AddressSpace(linux.AMD64PagedMemory):
                 #print hex(step+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
                 if target in page[idx:idx+len(target)]:
                     print "found ", target, hex(step+idx), page[idx-16:idx+32]
+                    candidate.append(step+idx)
                     #for tmpidx in range(0, 4096, 8):
                     #    print hex(step+tmpidx), hex(self.is_user_pointer(page[tmpidx:tmpidx+8], 0))
                     #return step
-            
-        print "[-] Error: target not found", self.read_memory(0x15c04c0+1192, 8)
-        '''
-        page = self.read_memory(0x15c0000, 0x200 * 8)
-        
-        for idx in range(0, 4096, 8):
-            print hex(0x15c0000+idx), page[idx:idx+8], hex(self.is_user_pointer(page[idx:idx+8], 0))
-        '''
-        exit(0)
+        if len(candidate) == 0:
+            print "[-] Error: target not found"
+            exit(0)
+        elif len(candidate) == 1:
+            return candidate[0]
+        else:
+            print "Not handled yet"
+            exit(0)
 
     def find_task_list_head(self, addr):
         # comm offset is 1488
@@ -897,6 +895,8 @@ class AddressSpace(linux.AMD64PagedMemory):
                         continue
                     if "swapper" in comm:
                         print "found next task at", comm , hex(addr + item * 8), hex(phys_addr), addr+3000 - gap
+                        #FIXME it may find many candidates, should not return so early
+                        return phys_addr
                     '''
                     if all( ord(c) >= 45 and ord(c) <= 122 or ord(c)==0 for c in comm ):
                         if len(comm.replace('\x00', '')) > 4:
@@ -910,6 +910,8 @@ class AddressSpace(linux.AMD64PagedMemory):
                     continue
                 if "swapper" in comm:
                     print "found next task at", comm , hex(addr + item * 8)
+                    #FIXME it may find many candidates, should not return so early
+                    return phys_addr
                 '''
                 if all( ord(c) >= 45 and ord(c) <= 122 or ord(c)==0 for c in comm ):
                     if len(comm.replace('\x00', '')) > 4:

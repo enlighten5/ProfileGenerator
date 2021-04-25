@@ -582,7 +582,7 @@ class ArmAddressSpace():
             else:
                 debug.warning("get_pte: invalid fine pde2_value {0:x}".format(pde2_value))
                 return None
-
+    '''
     def vtop(self, vaddr):
         # Volatility only support ARM 32 bit. 
         if vaddr & 0xffff800000000000 == 0xffff800000000000:
@@ -590,7 +590,7 @@ class ArmAddressSpace():
             return paddr
         else:
             return None
-
+    '''
     # FIXME
     # this is supposed to return all valid physical addresses based on the current dtb
     # this (may?) be painful to write due to ARM's different page table types and having small & large pages inside of those
