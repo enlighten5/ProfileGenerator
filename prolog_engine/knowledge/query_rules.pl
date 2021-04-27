@@ -105,7 +105,9 @@ query_task_struct(Base_addr) :-
         [Group_leader_addr, Group_leader_val],
         [Thread_group_addr, Thread_group_val],
         [Real_cred_addr, Real_cred_val],
-        [Cred_addr, Cred_val]
+        [Cred_addr, Cred_val],
+        [Fs_struct_addr, Fs_struct_val],
+        [Files_addr, Files_val]
     ]),
     Str_profile = ([
         [Comm_addr, Comm_val]    
@@ -136,7 +138,7 @@ query_task_struct(Base_addr) :-
     %Comm_addr #= Base_addr + 1696,
     %Tasks_addr #= Base_addr + 960,
     chain([Tasks_addr, Tasks2_addr, MM_addr, MM2_addr, Pid_addr, Tgid_addr, Real_parent_addr, Parent_addr , Child_addr, 
-           Group_leader_addr, Thread_group_addr, Real_cred_addr, Cred_addr, Comm_addr], #<),
+           Group_leader_addr, Thread_group_addr, Real_cred_addr, Cred_addr, Comm_addr, Fs_struct_addr, Files_addr], #<),
 
     tuples_in(Ptr_profile, Ptr),
     tuples_in(Str_profile, Str),
@@ -177,7 +179,6 @@ query_task_struct(Base_addr) :-
     %query_cred(Cred_val),
     %print_time('after query cred2', Current),
 
-
     get_time(Now),
     Time_past is Now - Current,
     statistics(real_time, [End|_]),
@@ -186,7 +187,8 @@ query_task_struct(Base_addr) :-
     Real_parent_offset #= Real_parent_addr - Base_addr,
     Group_leader_offset #= Group_leader_addr - Base_addr,
     log("./profile/task_struct", "tasks", Tasks_addr, Base_addr),
-    log("./profile/task_struct", "active_mm_struct", MM2_addr, Base_addr),
+    log("./profile/task_struct", "mm", MM_addr, Base_addr),
+    log("./profile/task_struct", "active_mm", MM2_addr, Base_addr),
     log("./profile/task_struct", "comm", Comm_addr, Base_addr),
     log("./profile/task_struct", "parent", Parent_addr, Base_addr),
     log("./profile/task_struct", "group_leader", Group_leader_addr, Base_addr),

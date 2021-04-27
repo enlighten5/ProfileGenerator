@@ -124,7 +124,10 @@ possible_mm_struct(Current_addr) :-
         [Start_brk_addr, Start_brk_val],
         [Brk_addr, Brk_val],
         [Start_stack_addr, Start_stack_val],
-        [ARG_start_addr, ARG_start_val]
+        [ARG_start_addr, ARG_start_val],
+        [ARG_end_addr, ARG_end_val],
+        [ENV_start_addr, ENV_start_val],
+        [ENV_start_addr, ENV_start_val]
     ],
     Mmap_addr #= Current_addr,
     Mmap_base_val #> 0x7f0000000000,
@@ -137,6 +140,9 @@ possible_mm_struct(Current_addr) :-
     Start_brk_addr #> Pgd_addr,
     Start_stack_val #> 0x7ff000000000,
     ARG_start_addr #< Current_addr + 500,
+    ARG_end_addr #= ARG_start_addr + 8,
+    ENV_start_addr #= ARG_end_addr + 8,
+    ENV_end_addr #= ENV_start_addr + 8,
     chain([Start_brk_addr, Brk_addr, Start_stack_addr, ARG_start_addr], #<),
     ARG_start_addr #= Start_brk_addr + 24,
     Brk_val #< 0x7ff000000000,
@@ -167,6 +173,10 @@ possible_mm_struct(Current_addr) :-
     log("./profile/mm_struct", "brk", Brk_addr, Current_addr),
     log("./profile/mm_struct", "start_stack", Start_stack_addr, Current_addr),
     log("./profile/mm_struct", "arg_start", ARG_start_addr, Current_addr),
+    log("./profile/mm_struct", "arg_end", ARG_end_addr, Current_addr),
+    log("./profile/mm_struct", "env_start", ENV_start_addr, Current_addr),
+    log("./profile/mm_struct", "env_end", ENV_end_addr, Current_addr),
+
     log("./profile/mm_struct", "mm_struct time", End, Start).
 
 possible_mm_struct_arm(Current_addr) :-

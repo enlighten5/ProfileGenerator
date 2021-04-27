@@ -162,7 +162,8 @@ def main():
         init_task = prolog_query.find_tasks(kthread_paddr - 3000)
         symbol_table["init_task"] = init_task + prolog_query.v_to_p_shift
         query_cmd = ["init_task"]
-        print "---", hex(init_task)
+        print "[Symbol]: init_task vaddr", hex(init_task+prolog_query.v_to_p_shift), "paddr", hex(init_task)
+        print "[Symbol]: init_top_pgt vaddr:", hex(prolog_query.dtb+prolog_query.v_to_p_shift), "paddr:", hex(prolog_query.dtb)
         #symbol_table["init_task"] = 0x1e219700
     
     #symbol_table["inet_sock"] = 0xffff8c7a578a1c00
