@@ -118,7 +118,7 @@ def main():
     if int(version_num[0])<=4 and int(version_num[1])<18:
         query_cmd = ["init_task", "init_fs", "modules", "mount_hashtable", "neigh_tables", "iomem_resource",
                  "tcp4_seq_afinfo", "udp4_seq_afinfo", "tty_drivers", "proc_root"]
-        query_cmd = ["neigh_tables"]
+        query_cmd = ["init_fs", "init_task"]
         query_object = {"init_task": "task_struct", "init_fs": "fs_struct", "modules": "module", 
                     "mount_hashtable": "mount_hash",
                     "neigh_tables": "neigh_tables", "iomem_resource": "resource",
@@ -132,7 +132,7 @@ def main():
     elif int(version_num[0])>=5 or (int(version_num[0])>=4 and int(version_num[1])>=18):
         query_cmd = ["init_task", "init_fs", "modules", "mount_hashtable", "neigh_tables", "iomem_resource",
                  "tcp4_seq_ops", "udp_seq_ops", "tty_drivers", "proc_root", "inet_sock"]
-        query_cmd = ["init_task"]
+        query_cmd = ["init_fs", "init_task"]
         query_object = {"init_task": "task_struct", "init_fs": "fs_struct", "modules": "module", 
                     "mount_hashtable": "mount_hash",
                     "neigh_tables": "neigh_tables", "iomem_resource": "resource",
@@ -161,6 +161,7 @@ def main():
         kthread_paddr = prolog_query.find_string('kthreadd\0')
         init_task = prolog_query.find_tasks(kthread_paddr - 3000)
         symbol_table["init_task"] = init_task + prolog_query.v_to_p_shift
+        symbol_table["init_fs"] = 0xfffffff82294380
         query_cmd = ["init_task"]
         print "[Symbol]: init_task vaddr", hex(init_task+prolog_query.v_to_p_shift), "paddr", hex(init_task)
         print "[Symbol]: init_top_pgt vaddr:", hex(prolog_query.dtb+prolog_query.v_to_p_shift), "paddr:", hex(prolog_query.dtb)

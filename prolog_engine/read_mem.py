@@ -2182,8 +2182,8 @@ def main():
     #paddr = 0x3ea4a9c0
     #print "translate addr", paddr
     paddr = 0x13b0a0000
-    paddr = addr_space.vtop(0xffffffffbc413840)
-    paddr = 0x3d792900
+    paddr = addr_space.vtop(0xfffffff82294380)
+    paddr = 0x1e219700
     '''
     tmp = addr_space.read_memory(paddr, 8)
     if not tmp:

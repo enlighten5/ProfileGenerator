@@ -803,7 +803,7 @@ possible_fs_struct(Base_addr) :-
     Root_dentry_addr #= Root_addr + 8,
     chain([Addr1, Addr2, Addr3, Root_addr, Root_dentry_addr, PWD_addr], #<),
     PWD_addr #= Root_addr + 16,
-    PWD_addr #< Base_addr + 50,
+    PWD_addr #< Base_addr + 80,
     tuples_in(Int_profile, Int),
     tuples_in(Ptr_profile, Ptr),
     Root_val #> 0,
@@ -817,7 +817,9 @@ possible_fs_struct(Base_addr) :-
     string_codes(X, Result),
     close(In),
     isTrue(Result),
-    query_dentry(Root_dentry_val),
+    /* FIXME d_child in dentyr might be zero. */
+    /*query_dentry(Root_dentry_val),*/
+    log("./profile/debug", "vfsmount", Root_addr, Base_addr),
 
     label([PWD_addr, PWD_val]),
     process_create(path('python'),
